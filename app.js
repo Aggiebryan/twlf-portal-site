@@ -706,6 +706,14 @@ function createTile(tile) {
         renderBookmarkTile(el, tile);
     }
 
+    // Edit mode indicator
+    if (state.editMode && !isWidget) {
+        const editDot = document.createElement('div');
+        editDot.className = 'edit-indicator';
+        editDot.innerHTML = '<i class="fa-solid fa-pen"></i>';
+        el.appendChild(editDot);
+    }
+
     // Context menu
     el.addEventListener('contextmenu', e => { e.preventDefault(); showContextMenu(e, tile); });
 
