@@ -30,17 +30,17 @@ function esc(t) { const d = document.createElement('div'); d.textContent = t; re
 
 // ---- Defaults ----
 const DEFAULT_CATEGORIES = [
-    { id: 'most-used', name: 'Most Used', color: '#17D6E5' },
-    { id: 'govt', name: 'Government Offices', color: '#FF017B' },
-    { id: 'web-pages', name: 'TWLF Web Pages', color: '#51CA20' },
-    { id: 'reference', name: 'Reference', color: '#FFBE00' },
-    { id: 'writing-ai', name: 'Writing & AI', color: '#9B59B6' },
-    { id: 'ai-tools', name: 'AI Tools', color: '#E67E22' },
-    { id: 'social', name: 'Social Media', color: '#3498DB' },
-    { id: 'texas-bar', name: 'Texas Bar', color: '#E74C3C' },
-    { id: 'associations', name: 'Associations', color: '#1ABC9C' },
-    { id: 'law-books', name: 'Law Books', color: '#8E44AD' },
-    { id: 'experts', name: 'Experts', color: '#F39C12' }
+    { id: 'most-used', name: 'Most Used', color: '#17D6E5', columns: 6 },
+    { id: 'govt', name: 'Government Offices', color: '#FF017B', columns: 5 },
+    { id: 'web-pages', name: 'TWLF Web Pages', color: '#51CA20', columns: 3 },
+    { id: 'reference', name: 'Reference', color: '#FFBE00', columns: 5 },
+    { id: 'writing-ai', name: 'Writing & AI', color: '#9B59B6', columns: 4 },
+    { id: 'ai-tools', name: 'AI Tools', color: '#E67E22', columns: 4 },
+    { id: 'social', name: 'Social Media', color: '#3498DB', columns: 4 },
+    { id: 'texas-bar', name: 'Texas Bar', color: '#E74C3C', columns: 4 },
+    { id: 'associations', name: 'Associations', color: '#1ABC9C', columns: 4 },
+    { id: 'law-books', name: 'Law Books', color: '#8E44AD', columns: 2 },
+    { id: 'experts', name: 'Experts', color: '#F39C12', columns: 2 }
 ];
 
 const DEFAULT_TILES = [
@@ -423,6 +423,14 @@ function closeSidebar() {
     if (overlay) overlay.classList.remove('active');
 }
 
+// ---- Compute category card width ----
+function getCatWidth(cols) {
+    const cellSize = state.settings.tileSize || 100;
+    const gap = Math.max(3, Math.round(cellSize * 0.06));
+    // width = cols * cell + (cols-1) * gap + padding(20) + border(2)
+    return cols * cellSize + (cols - 1) * gap + 22;
+}
+
 // ---- Render Grid ----
 function renderGrid() {
     const dash = getActiveDashboard();
@@ -434,8 +442,13 @@ function renderGrid() {
         const tiles = dash.tiles.filter(t => t.category === cat.id);
         if (tiles.length === 0 && !state.editMode) return;
 
+        const cols = cat.columns || 6;
+
         const section = document.createElement('div');
         section.className = 'category-section';
+        section.dataset.catId = cat.id;
+        section.style.width = getCatWidth(cols) + 'px';
+        section.draggable = state.editMode;
 
         // Header
         const hdr = document.createElement('div');
@@ -443,22 +456,39 @@ function renderGrid() {
         hdr.innerHTML = `
             <div class="cat-color-bar" style="background:${cat.color}"></div>
             <h2>${esc(cat.name)}</h2>
-            <div class="cat-line"></div>
             <div class="cat-actions">
-                <button title="Add tile to ${esc(cat.name)}" onclick="openAddModal('${cat.id}')"><i class="fa-solid fa-plus"></i></button>
+                <button class="cat-wider" title="Wider"><i class="fa-solid fa-arrow-right"></i></button>
+                <button class="cat-narrower" title="Narrower"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="cat-size-label">${cols} col</span>
+                <button title="Add tile" onclick="openAddModal('${cat.id}')"><i class="fa-solid fa-plus"></i></button>
             </div>
         `;
         section.appendChild(hdr);
+
+        // Resize buttons
+        hdr.querySelector('.cat-wider').addEventListener('click', e => {
+            e.stopPropagation();
+            cat.columns = Math.min(12, (cat.columns || 6) + 1);
+            saveState(); renderGrid();
+        });
+        hdr.querySelector('.cat-narrower').addEventListener('click', e => {
+            e.stopPropagation();
+            cat.columns = Math.max(1, (cat.columns || 6) - 1);
+            saveState(); renderGrid();
+        });
 
         // Grid
         const grid = document.createElement('div');
         grid.className = 'tile-grid';
         grid.dataset.category = cat.id;
+        grid.style.setProperty('--cat-cols', cols);
 
         tiles.forEach(t => grid.appendChild(createTile(t)));
 
-        // Empty cells
-        const emptyCellCount = Math.max(0, EMPTY_CELLS_PER_ROW - tiles.length);
+        // Empty cells to fill remaining row
+        const totalCells = tiles.length;
+        const remainder = totalCells % cols;
+        const emptyCellCount = remainder === 0 ? cols : (cols - remainder);
         for (let i = 0; i < emptyCellCount; i++) {
             const empty = document.createElement('div');
             empty.className = 'empty-cell';
@@ -472,6 +502,68 @@ function renderGrid() {
     });
 
     setupDragAndDrop();
+    setupCategoryDragAndDrop();
+}
+
+// ---- Category Drag & Drop ----
+function setupCategoryDragAndDrop() {
+    const container = document.getElementById('gridContainer');
+    let dragCatId = null;
+
+    container.querySelectorAll('.category-section').forEach(section => {
+        section.addEventListener('dragstart', e => {
+            if (!state.editMode) { e.preventDefault(); return; }
+            // Only allow drag from header
+            if (!e.target.closest('.category-header') && e.target === section) {
+                // dragging the section itself from header
+            }
+            dragCatId = section.dataset.catId;
+            section.classList.add('cat-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            // Prevent tile drag from bubbling
+            e.stopPropagation();
+        });
+
+        section.addEventListener('dragend', () => {
+            section.classList.remove('cat-dragging');
+            container.querySelectorAll('.cat-drag-over').forEach(x => x.classList.remove('cat-drag-over'));
+            dragCatId = null;
+        });
+
+        section.addEventListener('dragover', e => {
+            if (!dragCatId || !state.editMode) return;
+            const target = e.target.closest('.category-section');
+            if (!target || target.dataset.catId === dragCatId) return;
+            // Check if this is a category drag (not tile drag)
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            container.querySelectorAll('.cat-drag-over').forEach(x => x.classList.remove('cat-drag-over'));
+            target.classList.add('cat-drag-over');
+        });
+
+        section.addEventListener('dragleave', e => {
+            const target = e.target.closest('.category-section');
+            if (target) target.classList.remove('cat-drag-over');
+        });
+
+        section.addEventListener('drop', e => {
+            if (!dragCatId || !state.editMode) return;
+            const target = e.target.closest('.category-section');
+            if (!target || target.dataset.catId === dragCatId) return;
+            e.preventDefault();
+            e.stopPropagation();
+            container.querySelectorAll('.cat-drag-over').forEach(x => x.classList.remove('cat-drag-over'));
+
+            const dash = getActiveDashboard();
+            const fi = dash.categories.findIndex(c => c.id === dragCatId);
+            const ti = dash.categories.findIndex(c => c.id === target.dataset.catId);
+            if (fi === -1 || ti === -1) return;
+            const [moved] = dash.categories.splice(fi, 1);
+            dash.categories.splice(ti, 0, moved);
+            dragCatId = null;
+            saveState(); renderGrid();
+        });
+    });
 }
 
 // ---- Create Tile ----
@@ -976,6 +1068,7 @@ function setupDragAndDrop() {
             dragId = t.dataset.id;
             t.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
+            e.stopPropagation(); // prevent category drag
         });
         grid.addEventListener('dragend', e => {
             const t = e.target.closest('.tile');
@@ -1114,6 +1207,13 @@ function setupEventListeners() {
     slider.addEventListener('input', () => {
         state.settings.tileSize = parseInt(slider.value);
         applyTileSize(state.settings.tileSize);
+        // Update category card widths
+        document.querySelectorAll('.category-section').forEach(sec => {
+            const catId = sec.dataset.catId;
+            const dash = getActiveDashboard();
+            const cat = dash.categories.find(c => c.id === catId);
+            if (cat) sec.style.width = getCatWidth(cat.columns || 6) + 'px';
+        });
         saveState();
     });
 
