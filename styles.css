@@ -327,10 +327,9 @@ body {
     padding: 8px 12px;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-hover);
-    cursor: default;
+    cursor: grab;
 }
-body.edit-mode .category-header { cursor: grab; }
-body.edit-mode .category-header:active { cursor: grabbing; }
+.category-header:active { cursor: grabbing; }
 
 .category-header .cat-color-bar {
     width: 4px; height: 18px; border-radius: 2px; flex-shrink: 0;

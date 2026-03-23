@@ -448,7 +448,7 @@ function renderGrid() {
         section.className = 'category-section';
         section.dataset.catId = cat.id;
         section.style.width = getCatWidth(cols, cat.tileSize) + 'px';
-        section.draggable = state.editMode;
+        section.draggable = true;
 
         // Apply per-category styles
         if (cat.bgColor) {
@@ -526,35 +526,46 @@ function renderGrid() {
 }
 
 // ---- Category Drag & Drop ----
+let catDragId = null;
+
 function setupCategoryDragAndDrop() {
     const container = document.getElementById('gridContainer');
-    let dragCatId = null;
 
     container.querySelectorAll('.category-section').forEach(section => {
+        // Only start drag from the header area
+        const header = section.querySelector('.category-header');
+
+        header.addEventListener('mousedown', () => {
+            section.setAttribute('draggable', 'true');
+        });
+        header.addEventListener('mouseup', () => {
+            section.setAttribute('draggable', 'true');
+        });
+
         section.addEventListener('dragstart', e => {
-            if (!state.editMode) { e.preventDefault(); return; }
-            // Only allow drag from header
-            if (!e.target.closest('.category-header') && e.target === section) {
-                // dragging the section itself from header
+            // Only allow drag if initiated from header
+            if (!e.target.closest('.category-header') && !e.target.closest('.category-section[draggable]')) {
+                e.preventDefault(); return;
             }
-            dragCatId = section.dataset.catId;
+            // Don't drag if it's a tile being dragged
+            if (e.target.closest('.tile')) { return; }
+
+            catDragId = section.dataset.catId;
             section.classList.add('cat-dragging');
             e.dataTransfer.effectAllowed = 'move';
-            // Prevent tile drag from bubbling
-            e.stopPropagation();
+            e.dataTransfer.setData('text/plain', 'category:' + catDragId);
         });
 
         section.addEventListener('dragend', () => {
             section.classList.remove('cat-dragging');
             container.querySelectorAll('.cat-drag-over').forEach(x => x.classList.remove('cat-drag-over'));
-            dragCatId = null;
+            catDragId = null;
         });
 
         section.addEventListener('dragover', e => {
-            if (!dragCatId || !state.editMode) return;
+            if (!catDragId) return;
             const target = e.target.closest('.category-section');
-            if (!target || target.dataset.catId === dragCatId) return;
-            // Check if this is a category drag (not tile drag)
+            if (!target || target.dataset.catId === catDragId) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             container.querySelectorAll('.cat-drag-over').forEach(x => x.classList.remove('cat-drag-over'));
@@ -563,24 +574,26 @@ function setupCategoryDragAndDrop() {
 
         section.addEventListener('dragleave', e => {
             const target = e.target.closest('.category-section');
-            if (target) target.classList.remove('cat-drag-over');
+            if (target && !target.contains(e.relatedTarget)) {
+                target.classList.remove('cat-drag-over');
+            }
         });
 
         section.addEventListener('drop', e => {
-            if (!dragCatId || !state.editMode) return;
+            if (!catDragId) return;
             const target = e.target.closest('.category-section');
-            if (!target || target.dataset.catId === dragCatId) return;
+            if (!target || target.dataset.catId === catDragId) return;
             e.preventDefault();
             e.stopPropagation();
             container.querySelectorAll('.cat-drag-over').forEach(x => x.classList.remove('cat-drag-over'));
 
             const dash = getActiveDashboard();
-            const fi = dash.categories.findIndex(c => c.id === dragCatId);
+            const fi = dash.categories.findIndex(c => c.id === catDragId);
             const ti = dash.categories.findIndex(c => c.id === target.dataset.catId);
             if (fi === -1 || ti === -1) return;
             const [moved] = dash.categories.splice(fi, 1);
             dash.categories.splice(ti, 0, moved);
-            dragCatId = null;
+            catDragId = null;
             saveState(); renderGrid();
         });
     });
@@ -1088,7 +1101,9 @@ function setupDragAndDrop() {
             dragId = t.dataset.id;
             t.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', 'tile:' + dragId);
             e.stopPropagation(); // prevent category drag
+            catDragId = null; // ensure category drag doesn't fire
         });
         grid.addEventListener('dragend', e => {
             const t = e.target.closest('.tile');
