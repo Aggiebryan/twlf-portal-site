@@ -491,21 +491,47 @@ function renderGrid() {
             saveState(); renderGrid();
         });
 
-        // Grid
-        const grid = document.createElement('div');
-        grid.className = 'tile-grid';
-        grid.dataset.category = cat.id;
-        grid.style.setProperty('--cat-cols', cols);
-        // Per-category tile size
-        if (cat.tileSize) {
-            grid.style.setProperty('--cell', cat.tileSize + 'px');
-            grid.style.setProperty('--gap', Math.max(3, Math.round(cat.tileSize * 0.06)) + 'px');
-            grid.style.setProperty('--radius', Math.max(6, Math.round(cat.tileSize * 0.14)) + 'px');
+        const viewMode = cat.viewMode || 'grid';
+
+        if (viewMode === 'list' || viewMode === 'detailed') {
+            // List view
+            const list = document.createElement('div');
+            list.className = 'tile-list' + (viewMode === 'detailed' ? ' tile-list-detailed' : '');
+            list.dataset.category = cat.id;
+
+            tiles.filter(t => !t.widgetType).forEach(t => {
+                list.appendChild(createListItem(t, viewMode === 'detailed'));
+            });
+            // Still render widgets as grid tiles at the top if any
+            const widgetTiles = tiles.filter(t => t.widgetType);
+            if (widgetTiles.length > 0) {
+                const wGrid = document.createElement('div');
+                wGrid.className = 'tile-grid';
+                wGrid.dataset.category = cat.id;
+                wGrid.style.setProperty('--cat-cols', cols);
+                if (cat.tileSize) {
+                    wGrid.style.setProperty('--cell', cat.tileSize + 'px');
+                    wGrid.style.setProperty('--gap', Math.max(3, Math.round(cat.tileSize * 0.06)) + 'px');
+                    wGrid.style.setProperty('--radius', Math.max(6, Math.round(cat.tileSize * 0.14)) + 'px');
+                }
+                widgetTiles.forEach(t => wGrid.appendChild(createTile(t)));
+                section.appendChild(wGrid);
+            }
+            section.appendChild(list);
+        } else {
+            // Grid view (default)
+            const grid = document.createElement('div');
+            grid.className = 'tile-grid';
+            grid.dataset.category = cat.id;
+            grid.style.setProperty('--cat-cols', cols);
+            if (cat.tileSize) {
+                grid.style.setProperty('--cell', cat.tileSize + 'px');
+                grid.style.setProperty('--gap', Math.max(3, Math.round(cat.tileSize * 0.06)) + 'px');
+                grid.style.setProperty('--radius', Math.max(6, Math.round(cat.tileSize * 0.14)) + 'px');
+            }
+            tiles.forEach(t => grid.appendChild(createTile(t)));
+            section.appendChild(grid);
         }
-
-        tiles.forEach(t => grid.appendChild(createTile(t)));
-
-        section.appendChild(grid);
         container.appendChild(section);
     });
 
@@ -720,6 +746,76 @@ function createTile(tile) {
     return el;
 }
 
+// ---- List Item (for list/detailed views) ----
+function createListItem(tile, detailed) {
+    const row = document.createElement('div');
+    row.className = 'list-item';
+    row.dataset.id = tile.id;
+    row.draggable = true;
+
+    // Icon
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'list-item-icon';
+    iconWrap.style.background = tile.color || '#333';
+    const img = document.createElement('img');
+    const clearbit = getLogoUrl(tile.url);
+    const google = getGoogleFavicon(tile.url, 64);
+    img.src = tile.customIconUrl || clearbit;
+    img.alt = tile.name;
+    img.loading = 'lazy';
+    img.onerror = function () {
+        if (!tile.customIconUrl && this.src !== google && google) {
+            this.onerror = function () {
+                this.parentElement.innerHTML = `<span class="list-letter">${(tile.name || '?')[0].toUpperCase()}</span>`;
+            };
+            this.src = google;
+        } else {
+            this.parentElement.innerHTML = `<span class="list-letter">${(tile.name || '?')[0].toUpperCase()}</span>`;
+        }
+    };
+    iconWrap.appendChild(img);
+    row.appendChild(iconWrap);
+
+    // Text
+    const textWrap = document.createElement('div');
+    textWrap.className = 'list-item-text';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'list-item-name';
+    nameEl.textContent = tile.name;
+    textWrap.appendChild(nameEl);
+
+    if (detailed && tile.description) {
+        const descEl = document.createElement('div');
+        descEl.className = 'list-item-desc';
+        descEl.textContent = tile.description;
+        textWrap.appendChild(descEl);
+    }
+    row.appendChild(textWrap);
+
+    // Marker
+    if (tile.marker) {
+        const dot = document.createElement('div');
+        dot.className = 'list-item-marker';
+        dot.style.background = tile.marker;
+        row.appendChild(dot);
+    }
+
+    // Click
+    row.addEventListener('click', e => {
+        if (state.editMode) { e.preventDefault(); openEditModal(tile); return; }
+        const a = document.createElement('a');
+        a.href = tile.url;
+        a.target = tile.openIn === 'same' ? '_self' : '_blank';
+        a.rel = 'noopener noreferrer';
+        a.click();
+    });
+
+    // Context menu
+    row.addEventListener('contextmenu', e => { e.preventDefault(); showContextMenu(e, tile); });
+
+    return row;
+}
+
 function renderBookmarkTile(el, tile) {
     // Icon
     const iconDiv = document.createElement('div');
@@ -878,6 +974,7 @@ function openAddModal(catId) {
     document.getElementById('modalTitle').textContent = 'Add Tile';
     document.getElementById('tileName').value = '';
     document.getElementById('tileUrl').value = '';
+    document.getElementById('tileDescription').value = '';
     document.getElementById('tileIconUrl').value = '';
     document.getElementById('tileWidgetType').value = '';
     document.getElementById('tileOpenIn').value = 'new';
@@ -896,6 +993,7 @@ function openEditModal(tile) {
     document.getElementById('modalTitle').textContent = 'Edit Tile';
     document.getElementById('tileName').value = tile.name;
     document.getElementById('tileUrl').value = tile.url;
+    document.getElementById('tileDescription').value = tile.description || '';
     document.getElementById('tileIconUrl').value = tile.customIconUrl || '';
     document.getElementById('tileWidgetType').value = tile.widgetType || '';
     document.getElementById('tileOpenIn').value = tile.openIn || 'new';
@@ -965,6 +1063,7 @@ function getSelectedColor() {
 function saveTileFromModal() {
     const name = document.getElementById('tileName').value.trim();
     let url = document.getElementById('tileUrl').value.trim();
+    const description = document.getElementById('tileDescription').value.trim();
     const icon = document.getElementById('tileIconUrl').value.trim();
     const color = getSelectedColor();
     const size = getSelectedSize();
@@ -988,14 +1087,14 @@ function saveTileFromModal() {
     if (state.editingTile) {
         const t = dash.tiles.find(x => x.id === state.editingTile.id);
         if (t) {
-            Object.assign(t, { name, url, color, size, category, openIn,
+            Object.assign(t, { name, url, description: description || undefined, color, size, category, openIn,
                 customIconUrl: icon || undefined, widgetType,
                 marker: marker || undefined
             });
         }
     } else {
         dash.tiles.push({
-            id: 't' + Date.now(), name, url, color, size, category, openIn,
+            id: 't' + Date.now(), name, url, description: description || undefined, color, size, category, openIn,
             customIconUrl: icon || undefined, widgetType,
             marker: marker || undefined
         });
@@ -1592,6 +1691,14 @@ function openCatSettings(cat, anchorEl) {
                 <input type="text" class="cs-name" value="${esc(cat.name)}">
             </div>
             <div class="cat-settings-group">
+                <label>View Mode</label>
+                <select class="cs-view-mode">
+                    <option value="grid"${(cat.viewMode || 'grid') === 'grid' ? ' selected' : ''}>Grid (tiles)</option>
+                    <option value="list"${cat.viewMode === 'list' ? ' selected' : ''}>List (icon + name)</option>
+                    <option value="detailed"${cat.viewMode === 'detailed' ? ' selected' : ''}>Detailed List (icon + name + description)</option>
+                </select>
+            </div>
+            <div class="cat-settings-group">
                 <label>Columns Wide</label>
                 <div class="cat-settings-row">
                     <input type="range" class="cs-cols" min="1" max="12" value="${cols}" step="1">
@@ -1722,6 +1829,7 @@ function openCatSettings(cat, anchorEl) {
         c.headerColor = hdrColorInput.value;
         c.color = accentInput.value;
         c.tileSize = parseInt(tileSizeSlider.value) || 100;
+        c.viewMode = popover.querySelector('.cs-view-mode').value || 'grid';
 
         closeCatSettings();
         saveState(); renderGrid();
