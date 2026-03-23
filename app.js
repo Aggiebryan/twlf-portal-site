@@ -1,34 +1,24 @@
 /* ============================================
-   TWLF Portal - Application Logic
-   Real brand logos via Clearbit + fallbacks
-   Inline sidebar widgets (notes, todo)
+   TWLF Portal - Single-Page Symbaloo Grid
+   All categories visible, variable tile sizes,
+   inline widgets, real Clearbit logos
    ============================================ */
 
-// ---- Logo / Icon helpers ----
-// Clearbit returns actual brand logos (not tiny favicons)
-// Fallback chain: Clearbit -> Google HD favicon -> letter
+// ---- Logo helpers ----
 function getLogoUrl(url) {
     try {
-        const hostname = new URL(url).hostname;
-        // strip www. for cleaner Clearbit lookups
-        const domain = hostname.replace(/^www\./, '');
+        const domain = new URL(url).hostname.replace(/^www\./, '');
         return `https://logo.clearbit.com/${domain}`;
-    } catch {
-        return '';
-    }
+    } catch { return ''; }
 }
 
-function getGoogleFavicon(url, size) {
-    size = size || 128;
+function getGoogleFavicon(url, sz) {
     try {
-        const domain = new URL(url).hostname;
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
-    } catch {
-        return '';
-    }
+        return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=${sz || 128}`;
+    } catch { return ''; }
 }
 
-// ---- Default Data (from Start.me) ----
+// ---- Defaults ----
 const DEFAULT_CATEGORIES = [
     { id: 'most-used',   name: 'Most Used',           color: '#17D6E5' },
     { id: 'govt',        name: 'Government Offices',   color: '#FF017B' },
@@ -43,435 +33,388 @@ const DEFAULT_CATEGORIES = [
     { id: 'experts',     name: 'Experts',               color: '#F39C12' }
 ];
 
+// size: '1x1' | '2x1' | '2x2' | '3x1' | '4x1'
+// widgetType: 'search' | 'clock' | 'notes' | 'todo' | 'weather' | undefined
 const DEFAULT_TILES = [
+    // ─── Widgets (in Most Used) ───
+    { id: 'w-search', name: 'Google Search', url: '#', category: 'most-used', color: '#ffffff', size: '3x1', widgetType: 'search' },
+    { id: 'w-clock',  name: 'Clock',         url: '#', category: 'most-used', color: '#1a1a2e', size: '1x1', widgetType: 'clock' },
+    { id: 'w-notes',  name: 'Notes',         url: '#', category: 'most-used', color: '#1a1a2e', size: '2x2', widgetType: 'notes' },
+    { id: 'w-todo',   name: 'To Do',         url: '#', category: 'most-used', color: '#1a1a2e', size: '2x2', widgetType: 'todo' },
+
     // ─── Most Used ───
-    { id: 't1',  name: 'Clio',                  url: 'https://account.clio.com/',               category: 'most-used', color: '#0B70CE' },
-    { id: 't2',  name: 'Box',                   url: 'https://app.box.com/folder/0',            category: 'most-used', color: '#0061D5' },
-    { id: 't3',  name: 'eFile Texas',           url: 'https://www.efiletexas.gov/',             category: 'most-used', color: '#1C3A5F' },
-    { id: 't4',  name: 'Proof',                 url: 'https://app.proofserve.com/',             category: 'most-used', color: '#27AE60' },
-    { id: 't5',  name: 'WestLaw',               url: 'https://lawschool.thomsonreuters.com/',   category: 'most-used', color: '#E87722' },
-    { id: 't6',  name: 'LexisNexis',            url: 'https://plusai.lexis.com/',               category: 'most-used', color: '#D0232A' },
-    { id: 't7',  name: 'Letterstream',          url: 'https://www.letterstream.com/',           category: 'most-used', color: '#2980B9' },
-    { id: 't8',  name: 'Public Data',           url: 'https://www.publicdata.com/',             category: 'most-used', color: '#6C3483' },
-    { id: 't9',  name: 'eFile Texas (Old)',      url: 'https://texas.tylertech.cloud/OfsWeb',    category: 'most-used', color: '#5D6D7E' },
-    { id: 't10', name: 're:SearchTX',           url: 'https://research.txcourts.gov/CourtRecordsSearch/#!/dashboard', category: 'most-used', color: '#1A5276' },
-    { id: 't11', name: 'CRIS Purchase',         url: 'https://cris.dot.state.tx.us/public/Purchase/app/home', category: 'most-used', color: '#117A65' },
-    { id: 't12', name: 'Houston Public Records', url: 'https://houstontx.govqa.us/WEBAPP/_rs/(S(x1znyclu25l1jq31hgycgwrs))/SupportHome.aspx', category: 'most-used', color: '#C0392B' },
+    { id: 't1',  name: 'Clio',                  url: 'https://account.clio.com/',               category: 'most-used', color: '#0B70CE', size: '1x1' },
+    { id: 't2',  name: 'Box',                   url: 'https://app.box.com/folder/0',            category: 'most-used', color: '#0061D5', size: '1x1' },
+    { id: 't3',  name: 'eFile Texas',           url: 'https://www.efiletexas.gov/',             category: 'most-used', color: '#1C3A5F', size: '1x1' },
+    { id: 't4',  name: 'Proof',                 url: 'https://app.proofserve.com/',             category: 'most-used', color: '#27AE60', size: '1x1' },
+    { id: 't5',  name: 'WestLaw',               url: 'https://lawschool.thomsonreuters.com/',   category: 'most-used', color: '#E87722', size: '1x1' },
+    { id: 't6',  name: 'LexisNexis',            url: 'https://plusai.lexis.com/',               category: 'most-used', color: '#D0232A', size: '1x1' },
+    { id: 't7',  name: 'Letterstream',          url: 'https://www.letterstream.com/',           category: 'most-used', color: '#2980B9', size: '1x1' },
+    { id: 't8',  name: 'Public Data',           url: 'https://www.publicdata.com/',             category: 'most-used', color: '#6C3483', size: '1x1' },
+    { id: 't9',  name: 'eFile Texas (Old)',      url: 'https://texas.tylertech.cloud/OfsWeb',    category: 'most-used', color: '#5D6D7E', size: '1x1' },
+    { id: 't10', name: 're:SearchTX',           url: 'https://research.txcourts.gov/CourtRecordsSearch/#!/dashboard', category: 'most-used', color: '#1A5276', size: '1x1' },
+    { id: 't11', name: 'CRIS Purchase',         url: 'https://cris.dot.state.tx.us/public/Purchase/app/home', category: 'most-used', color: '#117A65', size: '1x1' },
+    { id: 't12', name: 'Houston Public Records', url: 'https://houstontx.govqa.us/WEBAPP/_rs/(S(x1znyclu25l1jq31hgycgwrs))/SupportHome.aspx', category: 'most-used', color: '#C0392B', size: '1x1' },
 
     // ─── Government Offices ───
-    { id: 't13', name: 'MoCo District Clerk',   url: 'https://www.mctx.org/departments/departments_d_-_f/district_clerk/index.php', category: 'govt', color: '#8B1A4A' },
-    { id: 't14', name: 'MoCo Odyssey',          url: 'https://odyssey.mctx.org/Secured/Login.aspx', category: 'govt', color: '#A93226' },
-    { id: 't15', name: 'HC District Clerk',      url: 'https://www.hcdistrictclerk.com/Common/Default.aspx', category: 'govt', color: '#6C3483' },
-    { id: 't16', name: 'HC County Clerk',        url: 'https://cclerk.hctx.net/',                category: 'govt', color: '#1C2833' },
-    { id: 't17', name: 'Secretary of State',     url: 'https://www.sos.state.tx.us/corp/sosda/index.shtml', category: 'govt', color: '#148F77' },
-    { id: 't18', name: 'PACER',                 url: 'https://pacer.login.uscourts.gov/csologin/login.jsf', category: 'govt', color: '#21618C' },
-    { id: 't19', name: 'Harris JP Public',       url: 'http://www.jp.hctx.net/#gsc.tab=0',       category: 'govt', color: '#CA6F1E' },
-    { id: 't20', name: 'Harris JP Odyssey',      url: 'https://jpodysseyportal.harriscountytx.gov/OdysseyPortalJP', category: 'govt', color: '#AF601A' },
-    { id: 't21', name: 'Jefferson Co Clerk',     url: 'https://co.jefferson.tx.us/dclerk/index.html', category: 'govt', color: '#117A65' },
-    { id: 't22', name: 'Harris Probate',         url: 'https://www.cclerk.hctx.net/applications/websearch/CourtSearch.aspx?CaseType=Probate', category: 'govt', color: '#7D3C98' },
-    { id: 't23', name: 'MoCo County Clerk',      url: 'https://countyfusion1.kofiletech.us/countyweb/loginDisplay.action?countyname=MontgomeryTX', category: 'govt', color: '#C0392B' },
-    { id: 't24', name: 'Galveston Clerk',        url: 'https://www.galvestoncountytx.gov/our-county/district-clerk', category: 'govt', color: '#2471A3' },
-    { id: 't25', name: 'MoCo County Odyssey',    url: 'https://odyssey.mctx.org/County/default.aspx', category: 'govt', color: '#D4AC0D' },
+    { id: 't13', name: 'MoCo District Clerk',   url: 'https://www.mctx.org/departments/departments_d_-_f/district_clerk/index.php', category: 'govt', color: '#8B1A4A', size: '1x1' },
+    { id: 't14', name: 'MoCo Odyssey',          url: 'https://odyssey.mctx.org/Secured/Login.aspx', category: 'govt', color: '#A93226', size: '1x1' },
+    { id: 't15', name: 'HC District Clerk',      url: 'https://www.hcdistrictclerk.com/Common/Default.aspx', category: 'govt', color: '#6C3483', size: '1x1' },
+    { id: 't16', name: 'HC County Clerk',        url: 'https://cclerk.hctx.net/',                category: 'govt', color: '#1C2833', size: '1x1' },
+    { id: 't17', name: 'Secretary of State',     url: 'https://www.sos.state.tx.us/corp/sosda/index.shtml', category: 'govt', color: '#148F77', size: '1x1' },
+    { id: 't18', name: 'PACER',                 url: 'https://pacer.login.uscourts.gov/csologin/login.jsf', category: 'govt', color: '#21618C', size: '1x1' },
+    { id: 't19', name: 'Harris JP Public',       url: 'http://www.jp.hctx.net/#gsc.tab=0',       category: 'govt', color: '#CA6F1E', size: '1x1' },
+    { id: 't20', name: 'Harris JP Odyssey',      url: 'https://jpodysseyportal.harriscountytx.gov/OdysseyPortalJP', category: 'govt', color: '#AF601A', size: '1x1' },
+    { id: 't21', name: 'Jefferson Co Clerk',     url: 'https://co.jefferson.tx.us/dclerk/index.html', category: 'govt', color: '#117A65', size: '1x1' },
+    { id: 't22', name: 'Harris Probate',         url: 'https://www.cclerk.hctx.net/applications/websearch/CourtSearch.aspx?CaseType=Probate', category: 'govt', color: '#7D3C98', size: '1x1' },
+    { id: 't23', name: 'MoCo County Clerk',      url: 'https://countyfusion1.kofiletech.us/countyweb/loginDisplay.action?countyname=MontgomeryTX', category: 'govt', color: '#C0392B', size: '1x1' },
+    { id: 't24', name: 'Galveston Clerk',        url: 'https://www.galvestoncountytx.gov/our-county/district-clerk', category: 'govt', color: '#2471A3', size: '1x1' },
+    { id: 't25', name: 'MoCo County Odyssey',    url: 'https://odyssey.mctx.org/County/default.aspx', category: 'govt', color: '#D4AC0D', size: '1x1' },
 
     // ─── TWLF Web Pages ───
-    { id: 't26', name: 'Estate Site',           url: 'https://woodlandslawestate.com',          category: 'web-pages', color: '#1E8449' },
-    { id: 't27', name: 'Woodlands Law',         url: 'https://Woodlands.law',                   category: 'web-pages', color: '#196F3D' },
-    { id: 't28', name: 'WordPress',             url: 'https://woodlandslaw.info/wp/',            category: 'web-pages', color: '#21759B' },
-    { id: 't29', name: 'N8N',                   url: 'https://n8n.twlf.dev/',                   category: 'web-pages', color: '#EA4B71' },
-    { id: 't30', name: 'Cal.com',               url: 'https://app.cal.com/',                     category: 'web-pages', color: '#292929' },
-    { id: 't31', name: 'Phone Intake',          url: 'https://intake.twlf.dev',                  category: 'web-pages', color: '#27AE60' },
+    { id: 't26', name: 'Estate Site',       url: 'https://woodlandslawestate.com',   category: 'web-pages', color: '#1E8449', size: '1x1' },
+    { id: 't27', name: 'Woodlands Law',     url: 'https://Woodlands.law',            category: 'web-pages', color: '#196F3D', size: '2x1' },
+    { id: 't28', name: 'WordPress',         url: 'https://woodlandslaw.info/wp/',     category: 'web-pages', color: '#21759B', size: '1x1' },
+    { id: 't29', name: 'N8N',               url: 'https://n8n.twlf.dev/',            category: 'web-pages', color: '#EA4B71', size: '1x1' },
+    { id: 't30', name: 'Cal.com',           url: 'https://app.cal.com/',              category: 'web-pages', color: '#292929', size: '1x1' },
+    { id: 't31', name: 'Phone Intake',      url: 'https://intake.twlf.dev',           category: 'web-pages', color: '#27AE60', size: '1x1' },
 
     // ─── Reference ───
-    { id: 't32', name: 'TexasLawHelp',          url: 'https://texaslawhelp.org/',               category: 'reference', color: '#D4A017' },
-    { id: 't33', name: 'TX Free Legal Answers',  url: 'https://texas.freelegalanswers.org/',     category: 'reference', color: '#2471A3' },
-    { id: 't34', name: 'Pre-Judgment Calc',      url: 'http://www.csgnetwork.com/interestloancalc.html', category: 'reference', color: '#CA6F1E' },
-    { id: 't35', name: 'Post-Judgment Calc',     url: 'https://www.webwinder.com/calculators/post_judge_calc.html', category: 'reference', color: '#C0392B' },
-    { id: 't36', name: 'Houston Incidents',      url: 'https://dmwilson.info/',                  category: 'reference', color: '#922B21' },
-    { id: 't37', name: 'Debt Collector Lookup',  url: 'https://direct.sos.state.tx.us/debtcollectors/DCSearch.asp', category: 'reference', color: '#6C3483' },
-    { id: 't38', name: 'Date Calculator',        url: 'https://www.timeanddate.com/date/duration.html', category: 'reference', color: '#1C2833' },
-    { id: 't39', name: 'SCRA',                  url: 'https://scra.dmdc.osd.mil/scra/#/login',  category: 'reference', color: '#148F77' },
-    { id: 't40', name: 'STCL Clinic',           url: 'https://www.stcl.edu/academics/legal-clinics/request-legal-assistance/', category: 'reference', color: '#7D3C98' },
-    { id: 't41', name: 'Bloomberg Law',          url: 'https://news.bloomberglaw.com/',           category: 'reference', color: '#1A5276' },
-    { id: 't42', name: 'Checkpoint',             url: 'https://checkpoint.riag.com/app/login',    category: 'reference', color: '#1E8449' },
-    { id: 't43', name: 'Court Deadlines',        url: 'https://courtdeadlines.com/',             category: 'reference', color: '#C0392B' },
-    { id: 't44', name: 'Clio University',        url: 'https://cliouniversity.learnupon.com/dashboard', category: 'reference', color: '#0B70CE' },
+    { id: 't32', name: 'TexasLawHelp',          url: 'https://texaslawhelp.org/',     category: 'reference', color: '#D4A017', size: '1x1' },
+    { id: 't33', name: 'TX Free Legal Answers',  url: 'https://texas.freelegalanswers.org/', category: 'reference', color: '#2471A3', size: '1x1' },
+    { id: 't34', name: 'Pre-Judgment Calc',      url: 'http://www.csgnetwork.com/interestloancalc.html', category: 'reference', color: '#CA6F1E', size: '1x1' },
+    { id: 't35', name: 'Post-Judgment Calc',     url: 'https://www.webwinder.com/calculators/post_judge_calc.html', category: 'reference', color: '#C0392B', size: '1x1' },
+    { id: 't36', name: 'Houston Incidents',      url: 'https://dmwilson.info/',        category: 'reference', color: '#922B21', size: '1x1' },
+    { id: 't37', name: 'Debt Collector Lookup',  url: 'https://direct.sos.state.tx.us/debtcollectors/DCSearch.asp', category: 'reference', color: '#6C3483', size: '1x1' },
+    { id: 't38', name: 'Date Calculator',        url: 'https://www.timeanddate.com/date/duration.html', category: 'reference', color: '#1C2833', size: '1x1' },
+    { id: 't39', name: 'SCRA',                  url: 'https://scra.dmdc.osd.mil/scra/#/login', category: 'reference', color: '#148F77', size: '1x1' },
+    { id: 't40', name: 'STCL Clinic',           url: 'https://www.stcl.edu/academics/legal-clinics/request-legal-assistance/', category: 'reference', color: '#7D3C98', size: '1x1' },
+    { id: 't41', name: 'Bloomberg Law',          url: 'https://news.bloomberglaw.com/', category: 'reference', color: '#1A5276', size: '1x1' },
+    { id: 't42', name: 'Checkpoint',             url: 'https://checkpoint.riag.com/app/login', category: 'reference', color: '#1E8449', size: '1x1' },
+    { id: 't43', name: 'Court Deadlines',        url: 'https://courtdeadlines.com/',   category: 'reference', color: '#C0392B', size: '1x1' },
+    { id: 't44', name: 'Clio University',        url: 'https://cliouniversity.learnupon.com/dashboard', category: 'reference', color: '#0B70CE', size: '1x1' },
 
     // ─── Writing & AI ───
-    { id: 't45', name: 'ChatGPT',              url: 'https://chat.openai.com/',                category: 'writing-ai', color: '#10A37F' },
-    { id: 't46', name: 'Gemini',               url: 'https://deepmind.google/technologies/gemini/', category: 'writing-ai', color: '#4285F4' },
-    { id: 't47', name: 'Claude',               url: 'https://claude.ai/new',                    category: 'writing-ai', color: '#D97757' },
-    { id: 't48', name: 'Grammarly',            url: 'https://app.grammarly.com/',               category: 'writing-ai', color: '#15C39A' },
-    { id: 't49', name: 'GroqChat',             url: 'https://chat.groq.com/',                   category: 'writing-ai', color: '#F55036' },
-    { id: 't50', name: 'QuillBot',             url: 'https://quillbot.com',                     category: 'writing-ai', color: '#499557' },
-    { id: 't51', name: 'WLF-AI',              url: 'https://wlf-ai.com/',                      category: 'writing-ai', color: '#7D3C98' },
-    { id: 't52', name: 'N8N Automation',       url: 'https://n8n.twlf.dev/',                    category: 'writing-ai', color: '#EA4B71' },
-    { id: 't53', name: 'Prompt Library',       url: 'https://docs.anthropic.com/en/resources/prompt-library/library', category: 'writing-ai', color: '#D97757' },
-    { id: 't54', name: 'Perplexity',           url: 'https://www.perplexity.ai/',               category: 'writing-ai', color: '#1FB8CD' },
-    { id: 't55', name: 'NotebookLM',           url: 'https://notebooklm.google.com/',           category: 'writing-ai', color: '#FBBC04' },
-    { id: 't56', name: 'GPT Prompt Packs',     url: 'https://academy.openai.com/public/clubs/work-users-ynjqu/resources/chatgpt-for-any-role', category: 'writing-ai', color: '#10A37F' },
+    { id: 't45', name: 'ChatGPT',     url: 'https://chat.openai.com/',     category: 'writing-ai', color: '#10A37F', size: '1x1' },
+    { id: 't46', name: 'Gemini',      url: 'https://deepmind.google/technologies/gemini/', category: 'writing-ai', color: '#4285F4', size: '1x1' },
+    { id: 't47', name: 'Claude',      url: 'https://claude.ai/new',        category: 'writing-ai', color: '#D97757', size: '1x1' },
+    { id: 't48', name: 'Grammarly',   url: 'https://app.grammarly.com/',   category: 'writing-ai', color: '#15C39A', size: '1x1' },
+    { id: 't49', name: 'GroqChat',    url: 'https://chat.groq.com/',       category: 'writing-ai', color: '#F55036', size: '1x1' },
+    { id: 't50', name: 'QuillBot',    url: 'https://quillbot.com',         category: 'writing-ai', color: '#499557', size: '1x1' },
+    { id: 't51', name: 'WLF-AI',      url: 'https://wlf-ai.com/',          category: 'writing-ai', color: '#7D3C98', size: '1x1' },
+    { id: 't52', name: 'N8N Auto',    url: 'https://n8n.twlf.dev/',        category: 'writing-ai', color: '#EA4B71', size: '1x1' },
+    { id: 't53', name: 'Prompt Library', url: 'https://docs.anthropic.com/en/resources/prompt-library/library', category: 'writing-ai', color: '#D97757', size: '1x1' },
+    { id: 't54', name: 'Perplexity',  url: 'https://www.perplexity.ai/',   category: 'writing-ai', color: '#1FB8CD', size: '1x1' },
+    { id: 't55', name: 'NotebookLM',  url: 'https://notebooklm.google.com/', category: 'writing-ai', color: '#FBBC04', size: '1x1' },
+    { id: 't56', name: 'GPT Prompts', url: 'https://academy.openai.com/public/clubs/work-users-ynjqu/resources/chatgpt-for-any-role', category: 'writing-ai', color: '#10A37F', size: '1x1' },
 
     // ─── AI Tools ───
-    { id: 't57', name: 'PimEyes',             url: 'https://pimeyes.com/en',                   category: 'ai-tools', color: '#CA6F1E' },
-    { id: 't58', name: 'Fathom',              url: 'https://fathom.video/',                     category: 'ai-tools', color: '#7C3AED' },
-    { id: 't59', name: 'Spellbook',           url: 'https://www.spellbook.legal/',              category: 'ai-tools', color: '#6366F1' },
-    { id: 't60', name: 'EvenUp',              url: 'https://www.evenuplaw.com/',                category: 'ai-tools', color: '#2563EB' },
-    { id: 't61', name: 'DISCO',               url: 'https://csdisco.com/',                      category: 'ai-tools', color: '#06B6D4' },
-    { id: 't62', name: 'Pre-dicta',           url: 'https://www.pre-dicta.com/',                category: 'ai-tools', color: '#14B8A6' },
-    { id: 't63', name: 'SlidesAI',            url: 'https://www.slidesai.io/',                  category: 'ai-tools', color: '#F59E0B' },
-    { id: 't64', name: 'Beautiful.ai',        url: 'https://www.beautiful.ai/',                 category: 'ai-tools', color: '#EC4899' },
+    { id: 't57', name: 'PimEyes',      url: 'https://pimeyes.com/en',        category: 'ai-tools', color: '#CA6F1E', size: '1x1' },
+    { id: 't58', name: 'Fathom',       url: 'https://fathom.video/',          category: 'ai-tools', color: '#7C3AED', size: '1x1' },
+    { id: 't59', name: 'Spellbook',    url: 'https://www.spellbook.legal/',   category: 'ai-tools', color: '#6366F1', size: '1x1' },
+    { id: 't60', name: 'EvenUp',       url: 'https://www.evenuplaw.com/',     category: 'ai-tools', color: '#2563EB', size: '1x1' },
+    { id: 't61', name: 'DISCO',        url: 'https://csdisco.com/',           category: 'ai-tools', color: '#06B6D4', size: '1x1' },
+    { id: 't62', name: 'Pre-dicta',    url: 'https://www.pre-dicta.com/',     category: 'ai-tools', color: '#14B8A6', size: '1x1' },
+    { id: 't63', name: 'SlidesAI',     url: 'https://www.slidesai.io/',       category: 'ai-tools', color: '#F59E0B', size: '1x1' },
+    { id: 't64', name: 'Beautiful.ai', url: 'https://www.beautiful.ai/',      category: 'ai-tools', color: '#EC4899', size: '1x1' },
 
     // ─── Social Media ───
-    { id: 't65', name: 'Radaar',              url: 'https://www.radaar.io/',                    category: 'social', color: '#6366F1' },
-    { id: 't66', name: 'Facebook',            url: 'https://www.facebook.com/',                 category: 'social', color: '#1877F2' },
-    { id: 't67', name: 'Instagram',           url: 'https://www.instagram.com/',                category: 'social', color: '#E4405F' },
-    { id: 't68', name: 'X',                   url: 'https://x.com',                             category: 'social', color: '#1C2833' },
-    { id: 't69', name: 'TikTok',              url: 'http://tiktok.com',                          category: 'social', color: '#010101' },
-    { id: 't70', name: 'LinkedIn',            url: 'https://linkedin.com',                       category: 'social', color: '#0A66C2' },
-    { id: 't71', name: 'Blog Admin',          url: 'https://woodlandslaw.info/wp/admin',         category: 'social', color: '#21759B' },
+    { id: 't65', name: 'Radaar',     url: 'https://www.radaar.io/',           category: 'social', color: '#6366F1', size: '1x1' },
+    { id: 't66', name: 'Facebook',   url: 'https://www.facebook.com/',        category: 'social', color: '#1877F2', size: '1x1' },
+    { id: 't67', name: 'Instagram',  url: 'https://www.instagram.com/',       category: 'social', color: '#E4405F', size: '1x1' },
+    { id: 't68', name: 'X',          url: 'https://x.com',                    category: 'social', color: '#1C2833', size: '1x1' },
+    { id: 't69', name: 'TikTok',     url: 'http://tiktok.com',                category: 'social', color: '#010101', size: '1x1' },
+    { id: 't70', name: 'LinkedIn',   url: 'https://linkedin.com',             category: 'social', color: '#0A66C2', size: '1x1' },
+    { id: 't71', name: 'Blog Admin', url: 'https://woodlandslaw.info/wp/admin', category: 'social', color: '#21759B', size: '1x1' },
 
     // ─── Texas Bar ───
-    { id: 't72', name: 'Bar Benefits',        url: 'https://texasbar.memberbenefits.com/',       category: 'texas-bar', color: '#C0392B' },
-    { id: 't73', name: 'State Bar of Texas',  url: 'https://www.texasbar.com/AM/Template.cfm?Section=Lawyers_Home', category: 'texas-bar', color: '#922B21' },
-    { id: 't74', name: 'LRIS',                url: 'https://www.texasbar.com/AM/Template.cfm?Section=Join_or_Manage_Your_LRIS_Account', category: 'texas-bar', color: '#CA6F1E' },
-    { id: 't75', name: 'TX Bar Career Center', url: 'https://l.tx.bar.associationcareernetwork.com/', category: 'texas-bar', color: '#2471A3' },
-    { id: 't76', name: 'TLAP',                url: 'https://www.tlaphelps.org/',                 category: 'texas-bar', color: '#27AE60' },
-    { id: 't77', name: 'TexasBarCLE',         url: 'http://www.texasbarcle.com/CLE/Home.asp',    category: 'texas-bar', color: '#7D3C98' },
-    { id: 't78', name: 'TX Bar Practice',     url: 'https://www.texasbarpractice.com/',          category: 'texas-bar', color: '#D4A017' },
+    { id: 't72', name: 'Bar Benefits',     url: 'https://texasbar.memberbenefits.com/', category: 'texas-bar', color: '#C0392B', size: '1x1' },
+    { id: 't73', name: 'State Bar of TX',  url: 'https://www.texasbar.com/AM/Template.cfm?Section=Lawyers_Home', category: 'texas-bar', color: '#922B21', size: '2x1' },
+    { id: 't74', name: 'LRIS',             url: 'https://www.texasbar.com/AM/Template.cfm?Section=Join_or_Manage_Your_LRIS_Account', category: 'texas-bar', color: '#CA6F1E', size: '1x1' },
+    { id: 't75', name: 'TX Bar Careers',   url: 'https://l.tx.bar.associationcareernetwork.com/', category: 'texas-bar', color: '#2471A3', size: '1x1' },
+    { id: 't76', name: 'TLAP',             url: 'https://www.tlaphelps.org/',    category: 'texas-bar', color: '#27AE60', size: '1x1' },
+    { id: 't77', name: 'TexasBarCLE',      url: 'http://www.texasbarcle.com/CLE/Home.asp', category: 'texas-bar', color: '#7D3C98', size: '1x1' },
+    { id: 't78', name: 'TX Bar Practice',  url: 'https://www.texasbarpractice.com/', category: 'texas-bar', color: '#D4A017', size: '1x1' },
 
     // ─── Associations ───
-    { id: 't79', name: 'Houston Bar',         url: 'https://www.hba.org/?pg=myhba',              category: 'associations', color: '#148F77' },
-    { id: 't80', name: 'Woodlands Bar',       url: 'https://www.woodlandsbarassociation.com/',    category: 'associations', color: '#1E8449' },
-    { id: 't81', name: 'Federalist Society',  url: 'https://fedsoc.org/',                        category: 'associations', color: '#1C2833' },
-    { id: 't82', name: 'MoCo Bar Assoc',      url: 'https://mcbatx.com/',                        category: 'associations', color: '#117A65' },
+    { id: 't79', name: 'Houston Bar',        url: 'https://www.hba.org/?pg=myhba',           category: 'associations', color: '#148F77', size: '1x1' },
+    { id: 't80', name: 'Woodlands Bar',      url: 'https://www.woodlandsbarassociation.com/', category: 'associations', color: '#1E8449', size: '1x1' },
+    { id: 't81', name: 'Federalist Society', url: 'https://fedsoc.org/',                      category: 'associations', color: '#1C2833', size: '1x1' },
+    { id: 't82', name: 'MoCo Bar Assoc',     url: 'https://mcbatx.com/',                      category: 'associations', color: '#117A65', size: '1x1' },
 
     // ─── Law Books ───
-    { id: 't83', name: 'West Academic',       url: 'https://signin.westacademic.com/',            category: 'law-books', color: '#6C3483' },
-    { id: 't84', name: 'CasebookConnect',     url: 'https://www.casebookconnect.com/login',       category: 'law-books', color: '#4A235A' },
+    { id: 't83', name: 'West Academic',    url: 'https://signin.westacademic.com/',       category: 'law-books', color: '#6C3483', size: '1x1' },
+    { id: 't84', name: 'CasebookConnect',  url: 'https://www.casebookconnect.com/login',  category: 'law-books', color: '#4A235A', size: '1x1' },
 
     // ─── Experts ───
-    { id: 't85', name: 'JurisPro',            url: 'https://www.jurispro.com/',                  category: 'experts', color: '#D4A017' },
-    { id: 't86', name: 'SEAK Experts',        url: 'https://www.seakexperts.com/',               category: 'experts', color: '#CA6F1E' },
+    { id: 't85', name: 'JurisPro',     url: 'https://www.jurispro.com/',   category: 'experts', color: '#D4A017', size: '1x1' },
+    { id: 't86', name: 'SEAK Experts', url: 'https://www.seakexperts.com/', category: 'experts', color: '#CA6F1E', size: '1x1' },
 ];
 
 const TILE_COLORS = [
-    '#17D6E5', '#FF017B', '#51CA20', '#FFBE00', '#9B59B6',
-    '#E67E22', '#3498DB', '#E74C3C', '#1ABC9C', '#1C2833',
-    '#D4A017', '#6C3483', '#2471A3', '#1E8449', '#AF601A',
-    '#922B21', '#117A65', '#5D6D7E', '#27AE60', '#6366F1',
-    '#EC4899', '#10A37F', '#F59E0B', '#06B6D4', '#0B70CE'
+    '#17D6E5','#FF017B','#51CA20','#FFBE00','#9B59B6',
+    '#E67E22','#3498DB','#E74C3C','#1ABC9C','#1C2833',
+    '#D4A017','#6C3483','#2471A3','#1E8449','#AF601A',
+    '#922B21','#117A65','#5D6D7E','#27AE60','#6366F1',
+    '#EC4899','#10A37F','#F59E0B','#06B6D4','#0B70CE','#ffffff'
 ];
 
 const SEARCH_ENGINES = [
-    { name: 'Google',      url: 'https://www.google.com/search?q=',   icon: 'https://www.google.com/favicon.ico' },
-    { name: 'Bing',        url: 'https://www.bing.com/search?q=',     icon: 'https://www.bing.com/favicon.ico' },
-    { name: 'DuckDuckGo',  url: 'https://duckduckgo.com/?q=',          icon: 'https://duckduckgo.com/favicon.ico' }
+    { name:'Google', url:'https://www.google.com/search?q=', icon:'https://www.google.com/favicon.ico' },
+    { name:'Bing',   url:'https://www.bing.com/search?q=',   icon:'https://www.bing.com/favicon.ico' },
+    { name:'DuckDuckGo', url:'https://duckduckgo.com/?q=',   icon:'https://duckduckgo.com/favicon.ico' }
 ];
 
+const SIZES = ['1x1','2x1','2x2','3x1','4x1'];
+
 // ---- State ----
-let state = {
-    categories: [],
-    tiles: [],
-    activeCategory: null,
-    settings: {
-        bgColor: '#0f1923',
-        bgImage: '',
-        tileSize: 100,
-        showLabels: true,
-        showSidebar: true,
-        searchEngine: 0
-    },
-    notes: '',
-    todos: [],
-    collapsedWidgets: {},
-    editMode: false,
-    editingTile: null
-};
+let state = { categories:[], tiles:[], settings:{ bgColor:'#0f1923', bgImage:'', tileSize:90, showLabels:true, showHeaders:true, searchEngine:0 }, notes:'', todos:[], editMode:false, editingTile:null };
 
 // ---- Init ----
 function init() {
     loadState();
     applyTileSize(state.settings.tileSize);
-    renderMarkers();
-    renderGrid();
+    renderPage();
     applySettings();
-    initWidgets();
     startClock();
     setupEventListeners();
-    setupDragAndDrop();
     setupSearch();
+    startWidgetClocks();
 }
 
-// ---- Persistence ----
 function loadState() {
-    const saved = localStorage.getItem('twlf-portal-state-v3');
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            state = { ...state, ...parsed };
-        } catch (e) {
-            console.error('Failed to load state:', e);
-            resetToDefaults();
-        }
-    } else {
-        resetToDefaults();
-    }
-    if (!state.activeCategory && state.categories.length > 0) {
-        state.activeCategory = state.categories[0].id;
-    }
+    const s = localStorage.getItem('twlf-portal-v4');
+    if (s) { try { state = { ...state, ...JSON.parse(s) }; } catch { resetToDefaults(); } }
+    else resetToDefaults();
 }
 
-function saveState() {
-    localStorage.setItem('twlf-portal-state-v3', JSON.stringify(state));
-}
+function saveState() { localStorage.setItem('twlf-portal-v4', JSON.stringify(state)); }
 
 function resetToDefaults() {
     state.categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
     state.tiles = JSON.parse(JSON.stringify(DEFAULT_TILES));
-    state.activeCategory = DEFAULT_CATEGORIES[0].id;
-    state.settings = {
-        bgColor: '#0f1923',
-        bgImage: '',
-        tileSize: 100,
-        showLabels: true,
-        showSidebar: true,
-        searchEngine: 0
-    };
-    state.notes = '';
-    state.todos = [];
-    state.collapsedWidgets = {};
+    state.settings = { bgColor:'#0f1923', bgImage:'', tileSize:90, showLabels:true, showHeaders:true, searchEngine:0 };
+    state.notes = ''; state.todos = [];
     saveState();
 }
 
-// ---- Tile Size (continuous slider) ----
-function applyTileSize(size) {
-    size = parseInt(size) || 100;
-    document.documentElement.style.setProperty('--tile-size', size + 'px');
-    document.documentElement.style.setProperty('--tile-radius', Math.max(8, Math.round(size * 0.16)) + 'px');
-    document.documentElement.style.setProperty('--label-size', Math.max(8, Math.min(13, Math.round(size * 0.1))) + 'px');
-    document.documentElement.style.setProperty('--tile-gap', Math.max(4, Math.round(size * 0.07)) + 'px');
+function applyTileSize(sz) {
+    sz = parseInt(sz) || 90;
+    document.documentElement.style.setProperty('--cell', sz + 'px');
+    document.documentElement.style.setProperty('--radius', Math.max(6, Math.round(sz * 0.15)) + 'px');
+    document.documentElement.style.setProperty('--gap', Math.max(3, Math.round(sz * 0.06)) + 'px');
 }
 
-// ---- Rendering ----
-function renderMarkers() {
-    const bar = document.getElementById('markerBar');
-    bar.innerHTML = '';
+// ---- Render all categories on one page ----
+function renderPage() {
+    const main = document.getElementById('mainContent');
+    main.innerHTML = '';
     state.categories.forEach(cat => {
-        const marker = document.createElement('div');
-        marker.className = `marker${cat.id === state.activeCategory ? ' active' : ''}`;
-        marker.style.borderColor = cat.color;
-        if (cat.id === state.activeCategory) {
-            marker.style.background = hexToRgba(cat.color, 0.15);
-        }
-        marker.textContent = cat.name;
-        marker.dataset.id = cat.id;
-        marker.addEventListener('click', () => {
-            state.activeCategory = cat.id;
-            saveState();
-            renderMarkers();
-            renderGrid();
-        });
-        marker.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            const newName = prompt('Rename category:', cat.name);
-            if (newName && newName.trim()) {
-                cat.name = newName.trim();
-                saveState();
-                renderMarkers();
-            }
-        });
-        bar.appendChild(marker);
+        const tiles = state.tiles.filter(t => t.category === cat.id);
+        if (tiles.length === 0) return;
+
+        const section = document.createElement('div');
+        section.className = 'category-section';
+
+        // Header
+        const hdr = document.createElement('div');
+        hdr.className = 'category-header';
+        hdr.innerHTML = `<div class="cat-color-bar" style="background:${cat.color}"></div><h2>${esc(cat.name)}</h2><div class="cat-line"></div>`;
+        section.appendChild(hdr);
+
+        // Grid
+        const grid = document.createElement('div');
+        grid.className = 'tile-grid';
+        grid.dataset.category = cat.id;
+        tiles.forEach(t => grid.appendChild(createTile(t)));
+        section.appendChild(grid);
+
+        main.appendChild(section);
     });
+    setupDragAndDrop();
 }
 
-function renderGrid() {
-    const container = document.getElementById('gridContainer');
-    container.innerHTML = '';
+// ---- Create Tile ----
+function createTile(tile) {
+    const size = tile.size || '1x1';
+    const isWidget = !!tile.widgetType;
 
-    const activeTiles = state.tiles.filter(t => t.category === state.activeCategory);
-
-    activeTiles.forEach(tile => {
-        container.appendChild(createTileElement(tile));
-    });
-
-    // Fill with empty slots
-    const minSlots = 24;
-    const remaining = Math.max(0, minSlots - activeTiles.length);
-    for (let i = 0; i < remaining; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'tile empty-slot';
-        empty.addEventListener('click', () => { if (state.editMode) openAddModal(); });
-        container.appendChild(empty);
-    }
-}
-
-function createTileElement(tile) {
     const el = document.createElement('div');
-    el.className = 'tile';
+    el.className = `tile size-${size}`;
+    if (isWidget) el.classList.add('widget-tile');
     el.style.background = tile.color || '#333';
     el.dataset.id = tile.id;
-    el.draggable = true;
+    el.draggable = !isWidget;
 
-    // ── Logo with fallback chain ──
+    if (isWidget) {
+        renderWidget(el, tile);
+    } else {
+        renderBookmarkTile(el, tile);
+    }
+
+    // Context menu (all tiles)
+    el.addEventListener('contextmenu', e => { e.preventDefault(); showContextMenu(e, tile); });
+
+    return el;
+}
+
+function renderBookmarkTile(el, tile) {
+    // Icon
     const iconDiv = document.createElement('div');
     iconDiv.className = 'tile-icon';
-
-    if (tile.customIconUrl) {
-        // User-specified custom icon
-        const img = createLogoImg(tile.customIconUrl, tile);
-        iconDiv.appendChild(img);
-    } else {
-        // Try Clearbit first, then Google favicon, then letter
-        const img = document.createElement('img');
-        const clearbitUrl = getLogoUrl(tile.url);
-        const googleUrl = getGoogleFavicon(tile.url, 128);
-
-        img.src = clearbitUrl;
-        img.alt = tile.name;
-        img.loading = 'lazy';
-        img.onerror = function () {
-            // Clearbit failed → try Google favicon
-            if (this.src !== googleUrl && googleUrl) {
-                this.onerror = function () {
-                    // Google also failed → show letter
-                    showLetterFallback(this.parentElement, tile);
-                };
-                this.src = googleUrl;
-            } else {
-                showLetterFallback(this.parentElement, tile);
-            }
-        };
-        iconDiv.appendChild(img);
-    }
+    const img = document.createElement('img');
+    const clearbit = getLogoUrl(tile.url);
+    const google = getGoogleFavicon(tile.url, 128);
+    img.src = tile.customIconUrl || clearbit;
+    img.alt = tile.name;
+    img.loading = 'lazy';
+    img.onerror = function () {
+        if (!tile.customIconUrl && this.src !== google && google) {
+            this.onerror = function () { letterFallback(this.parentElement, tile); };
+            this.src = google;
+        } else { letterFallback(this.parentElement, tile); }
+    };
+    iconDiv.appendChild(img);
     el.appendChild(iconDiv);
 
-    // ── Label ──
+    // Label
     const label = document.createElement('div');
     label.className = 'tile-label';
     label.textContent = tile.name;
     el.appendChild(label);
 
-    // ── Click ──
-    el.addEventListener('click', (e) => {
+    // Click
+    el.addEventListener('click', e => {
         if (state.editMode) { e.preventDefault(); openEditModal(tile); return; }
         window.open(tile.url, '_blank');
     });
-
-    // ── Context Menu ──
-    el.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        showContextMenu(e, tile);
-    });
-
-    return el;
 }
 
-function createLogoImg(src, tile) {
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = tile.name;
-    img.loading = 'lazy';
-    img.onerror = function () { showLetterFallback(this.parentElement, tile); };
-    return img;
-}
-
-function showLetterFallback(parent, tile) {
+function letterFallback(parent, tile) {
     parent.innerHTML = '';
-    const span = document.createElement('span');
-    span.className = 'letter-fallback';
-    span.textContent = (tile.name || '?')[0].toUpperCase();
-    parent.appendChild(span);
+    const s = document.createElement('span');
+    s.className = 'letter-fallback';
+    s.textContent = (tile.name || '?')[0].toUpperCase();
+    parent.appendChild(s);
 }
 
-// ---- Inline Widgets ----
-function initWidgets() {
-    // Load notes
-    document.getElementById('notesArea').value = state.notes || '';
+// ---- Widget Renderers ----
+function renderWidget(el, tile) {
+    switch (tile.widgetType) {
+        case 'search': renderSearchWidget(el); break;
+        case 'clock':  renderClockWidget(el); break;
+        case 'notes':  renderNotesWidget(el); break;
+        case 'todo':   renderTodoWidget(el); break;
+        case 'weather': renderWeatherWidget(el); break;
+    }
+    if (state.editMode) {
+        el.addEventListener('click', e => { if (e.target === el) openEditModal(tile); });
+    }
+}
 
-    // Load todos
-    renderTodos();
-
-    // Restore collapsed state
-    Object.keys(state.collapsedWidgets || {}).forEach(widgetId => {
-        if (state.collapsedWidgets[widgetId]) {
-            const el = document.getElementById(widgetId);
-            if (el) el.classList.add('collapsed');
+function renderSearchWidget(el) {
+    el.classList.add('widget-search');
+    el.innerHTML = `
+        <div class="g-logo"><span class="g-b">G</span><span class="g-r">o</span><span class="g-y">o</span><span class="g-b">g</span><span class="g-g">l</span><span class="g-r">e</span></div>
+        <div class="widget-search-bar">
+            <input type="text" placeholder="Search the web..." class="widget-search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+    `;
+    const input = el.querySelector('.widget-search-input');
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && input.value.trim()) {
+            window.open('https://www.google.com/search?q=' + encodeURIComponent(input.value.trim()), '_blank');
+            input.value = '';
         }
     });
-
-    // Collapse toggle buttons
-    document.querySelectorAll('.widget-collapse-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const widgetId = btn.dataset.widget;
-            const panel = document.getElementById(widgetId);
-            if (!panel) return;
-            panel.classList.toggle('collapsed');
-            if (!state.collapsedWidgets) state.collapsedWidgets = {};
-            state.collapsedWidgets[widgetId] = panel.classList.contains('collapsed');
-            saveState();
-        });
-    });
-
-    // Notes save
-    document.getElementById('notesSaveBtn').addEventListener('click', () => {
-        state.notes = document.getElementById('notesArea').value;
-        saveState();
-    });
-
-    // Auto-save notes on blur
-    document.getElementById('notesArea').addEventListener('blur', () => {
-        state.notes = document.getElementById('notesArea').value;
-        saveState();
-    });
-
-    // Todo add
-    document.getElementById('todoAddBtn').addEventListener('click', addTodo);
-    document.getElementById('todoInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') addTodo();
-    });
+    input.addEventListener('click', e => e.stopPropagation());
 }
 
-function addTodo() {
-    const input = document.getElementById('todoInput');
-    const text = input.value.trim();
-    if (!text) return;
-    if (!state.todos) state.todos = [];
-    state.todos.push({ text, done: false });
-    input.value = '';
-    saveState();
-    renderTodos();
+function renderClockWidget(el) {
+    el.classList.add('widget-clock');
+    el.innerHTML = `<div class="clock-time"></div><div class="clock-date"></div>`;
+    updateClockWidget(el);
 }
 
-function renderTodos() {
-    const list = document.getElementById('todoList');
-    list.innerHTML = '';
+function updateClockWidget(el) {
+    const now = new Date();
+    const timeEl = el.querySelector('.clock-time');
+    const dateEl = el.querySelector('.clock-date');
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+
+function startWidgetClocks() {
+    setInterval(() => {
+        document.querySelectorAll('.widget-clock').forEach(updateClockWidget);
+    }, 30000);
+}
+
+function renderNotesWidget(el) {
+    el.classList.add('widget-notes');
+    el.innerHTML = `<div class="widget-note-label"><i class="fa-solid fa-sticky-note"></i> Notes</div><textarea class="widget-notes-area" placeholder="Type notes...">${esc(state.notes || '')}</textarea>`;
+    const ta = el.querySelector('textarea');
+    ta.addEventListener('click', e => e.stopPropagation());
+    ta.addEventListener('input', () => { state.notes = ta.value; saveState(); });
+}
+
+function renderTodoWidget(el) {
+    el.classList.add('widget-todo');
+    const header = document.createElement('div');
+    header.className = 'widget-todo-header';
+    header.innerHTML = '<i class="fa-solid fa-list-check"></i> To Do';
+    el.appendChild(header);
+
+    const list = document.createElement('ul');
+    list.className = 'todo-mini-list';
     (state.todos || []).forEach((todo, idx) => {
         const li = document.createElement('li');
         if (todo.done) li.classList.add('done');
-        li.innerHTML = `
-            <input type="checkbox" ${todo.done ? 'checked' : ''}>
-            <span>${escapeHtml(todo.text)}</span>
-            <button><i class="fa-solid fa-xmark"></i></button>
-        `;
-        li.querySelector('input').addEventListener('change', () => {
+        li.innerHTML = `<input type="checkbox" ${todo.done ? 'checked' : ''}><span>${esc(todo.text)}</span>`;
+        li.querySelector('input').addEventListener('change', e => {
+            e.stopPropagation();
             state.todos[idx].done = !state.todos[idx].done;
-            saveState(); renderTodos();
+            saveState(); renderPage();
         });
-        li.querySelector('button').addEventListener('click', () => {
-            state.todos.splice(idx, 1);
-            saveState(); renderTodos();
-        });
-        list.appendChild(li);
+        li.addEventListener('click', e => e.stopPropagation());
+        el.appendChild(li);
     });
+
+    const inputRow = document.createElement('div');
+    inputRow.className = 'todo-mini-input';
+    inputRow.innerHTML = `<input type="text" placeholder="Add task..."><button>+</button>`;
+    const inp = inputRow.querySelector('input');
+    const btn = inputRow.querySelector('button');
+    const addFn = () => {
+        if (!inp.value.trim()) return;
+        if (!state.todos) state.todos = [];
+        state.todos.push({ text: inp.value.trim(), done: false });
+        inp.value = '';
+        saveState(); renderPage();
+    };
+    btn.addEventListener('click', e => { e.stopPropagation(); addFn(); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') addFn(); });
+    inp.addEventListener('click', e => e.stopPropagation());
+    el.appendChild(inputRow);
+}
+
+function renderWeatherWidget(el) {
+    el.classList.add('widget-weather');
+    el.innerHTML = `<div class="weather-temp"><i class="fa-solid fa-cloud-sun"></i> --°F</div><div class="weather-desc">Loading...</div><div class="weather-loc">Weather</div>`;
 }
 
 // ---- Modals ----
-function openAddModal() {
+function openAddModal(catId) {
     state.editingTile = null;
     document.getElementById('modalTitle').textContent = 'Add Tile';
     document.getElementById('tileName').value = '';
     document.getElementById('tileUrl').value = '';
     document.getElementById('tileIconUrl').value = '';
+    document.getElementById('tileWidgetType').value = '';
     document.getElementById('modalDelete').style.display = 'none';
+    populateCategorySelect(catId || (state.categories[0] && state.categories[0].id));
+    setSelectedSize('1x1');
     renderColorPicker(TILE_COLORS[0]);
     document.getElementById('tileModal').classList.add('active');
 }
@@ -482,120 +425,125 @@ function openEditModal(tile) {
     document.getElementById('tileName').value = tile.name;
     document.getElementById('tileUrl').value = tile.url;
     document.getElementById('tileIconUrl').value = tile.customIconUrl || '';
+    document.getElementById('tileWidgetType').value = tile.widgetType || '';
     document.getElementById('modalDelete').style.display = 'block';
+    populateCategorySelect(tile.category);
+    setSelectedSize(tile.size || '1x1');
     renderColorPicker(tile.color || TILE_COLORS[0]);
     document.getElementById('tileModal').classList.add('active');
 }
 
-function renderColorPicker(selectedColor) {
-    const picker = document.getElementById('colorPicker');
-    picker.innerHTML = '';
-    TILE_COLORS.forEach(color => {
-        const swatch = document.createElement('div');
-        swatch.className = `color-swatch${color === selectedColor ? ' selected' : ''}`;
-        swatch.style.background = color;
-        swatch.dataset.hex = color;
-        swatch.addEventListener('click', () => {
-            picker.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-            swatch.classList.add('selected');
+function populateCategorySelect(selectedId) {
+    const sel = document.getElementById('tileCategory');
+    sel.innerHTML = '';
+    state.categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id; opt.textContent = c.name;
+        if (c.id === selectedId) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+function setSelectedSize(size) {
+    document.querySelectorAll('.size-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.size === size);
+    });
+}
+
+function getSelectedSize() {
+    const s = document.querySelector('.size-option.selected');
+    return s ? s.dataset.size : '1x1';
+}
+
+function renderColorPicker(selected) {
+    const p = document.getElementById('colorPicker');
+    p.innerHTML = '';
+    TILE_COLORS.forEach(c => {
+        const s = document.createElement('div');
+        s.className = `color-swatch${c === selected ? ' selected' : ''}`;
+        s.style.background = c; s.dataset.hex = c;
+        s.addEventListener('click', () => {
+            p.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('selected'));
+            s.classList.add('selected');
         });
-        picker.appendChild(swatch);
+        p.appendChild(s);
     });
 }
 
 function getSelectedColor() {
-    const selected = document.querySelector('#colorPicker .color-swatch.selected');
-    if (!selected) return TILE_COLORS[0];
-    return selected.dataset.hex || TILE_COLORS[0];
+    const s = document.querySelector('#colorPicker .color-swatch.selected');
+    return s ? s.dataset.hex : TILE_COLORS[0];
 }
 
 function saveTileFromModal() {
     const name = document.getElementById('tileName').value.trim();
     const url = document.getElementById('tileUrl').value.trim();
-    const customIconUrl = document.getElementById('tileIconUrl').value.trim();
+    const icon = document.getElementById('tileIconUrl').value.trim();
     const color = getSelectedColor();
+    const size = getSelectedSize();
+    const category = document.getElementById('tileCategory').value;
+    const widgetType = document.getElementById('tileWidgetType').value || undefined;
 
-    if (!name || !url) return;
+    if (!name) return;
 
     if (state.editingTile) {
-        const tile = state.tiles.find(t => t.id === state.editingTile.id);
-        if (tile) {
-            tile.name = name;
-            tile.url = url;
-            tile.color = color;
-            tile.customIconUrl = customIconUrl || undefined;
-        }
+        const t = state.tiles.find(x => x.id === state.editingTile.id);
+        if (t) { Object.assign(t, { name, url: url || '#', color, size, category, customIconUrl: icon || undefined, widgetType }); }
     } else {
-        state.tiles.push({
-            id: 't' + Date.now(),
-            name, url, color,
-            category: state.activeCategory,
-            customIconUrl: customIconUrl || undefined
-        });
+        state.tiles.push({ id: 't' + Date.now(), name, url: url || '#', color, size, category, customIconUrl: icon || undefined, widgetType });
     }
-
-    saveState();
-    renderGrid();
-    closeTileModal();
+    saveState(); renderPage(); closeTileModal();
 }
 
-function deleteTileFromModal() {
-    if (!state.editingTile) return;
-    if (!confirm(`Delete "${state.editingTile.name}"?`)) return;
+function deleteTile() {
+    if (!state.editingTile || !confirm(`Delete "${state.editingTile.name}"?`)) return;
     state.tiles = state.tiles.filter(t => t.id !== state.editingTile.id);
-    saveState();
-    renderGrid();
-    closeTileModal();
+    saveState(); renderPage(); closeTileModal();
 }
 
-function closeTileModal() {
-    document.getElementById('tileModal').classList.remove('active');
-    state.editingTile = null;
-}
+function closeTileModal() { document.getElementById('tileModal').classList.remove('active'); state.editingTile = null; }
 
 // ---- Context Menu ----
-let contextTile = null;
+let ctxTile = null;
 
 function showContextMenu(e, tile) {
-    contextTile = tile;
-    const menu = document.getElementById('contextMenu');
-    menu.classList.add('active');
-    menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
-    menu.style.top = Math.min(e.clientY, window.innerHeight - 180) + 'px';
+    ctxTile = tile;
+    const m = document.getElementById('contextMenu');
+    m.classList.add('active');
+    m.style.left = Math.min(e.clientX, window.innerWidth - 190) + 'px';
+    m.style.top = Math.min(e.clientY, window.innerHeight - 170) + 'px';
 }
 
-function hideContextMenu() {
-    document.getElementById('contextMenu').classList.remove('active');
-    contextTile = null;
-}
+function hideContextMenu() { document.getElementById('contextMenu').classList.remove('active'); ctxTile = null; }
 
-function handleContextAction(action) {
-    if (!contextTile) return;
-    const tile = contextTile;
-    hideContextMenu();
-
+function handleCtx(action) {
+    if (!ctxTile) return;
+    const tile = ctxTile; hideContextMenu();
     switch (action) {
-        case 'edit':
-            openEditModal(tile);
+        case 'edit': openEditModal(tile); break;
+        case 'resize': {
+            const cur = SIZES.indexOf(tile.size || '1x1');
+            const next = SIZES[(cur + 1) % SIZES.length];
+            const t = state.tiles.find(x => x.id === tile.id);
+            if (t) { t.size = next; saveState(); renderPage(); }
             break;
+        }
         case 'color': {
-            const newColor = prompt('Enter hex color (e.g. #FF017B):', tile.color);
-            if (newColor && /^#[0-9A-Fa-f]{6}$/.test(newColor)) {
-                const t = state.tiles.find(t2 => t2.id === tile.id);
-                if (t) { t.color = newColor; saveState(); renderGrid(); }
+            const c = prompt('Hex color (e.g. #FF017B):', tile.color);
+            if (c && /^#[0-9A-Fa-f]{6}$/.test(c)) {
+                const t = state.tiles.find(x => x.id === tile.id);
+                if (t) { t.color = c; saveState(); renderPage(); }
             }
             break;
         }
         case 'duplicate': {
-            const dup = { ...tile, id: 't' + Date.now() };
-            state.tiles.push(dup);
-            saveState(); renderGrid();
-            break;
+            state.tiles.push({ ...tile, id: 't' + Date.now() });
+            saveState(); renderPage(); break;
         }
         case 'delete':
             if (confirm(`Delete "${tile.name}"?`)) {
-                state.tiles = state.tiles.filter(t2 => t2.id !== tile.id);
-                saveState(); renderGrid();
+                state.tiles = state.tiles.filter(x => x.id !== tile.id);
+                saveState(); renderPage();
             }
             break;
     }
@@ -606,7 +554,7 @@ function openSettings() {
     document.getElementById('bgColor').value = state.settings.bgColor || '#0f1923';
     document.getElementById('bgImage').value = state.settings.bgImage || '';
     document.getElementById('showLabels').checked = state.settings.showLabels !== false;
-    document.getElementById('showSidebar').checked = state.settings.showSidebar !== false;
+    document.getElementById('showSectionHeaders').checked = state.settings.showHeaders !== false;
     document.getElementById('settingsModal').classList.add('active');
 }
 
@@ -614,73 +562,55 @@ function saveSettings() {
     state.settings.bgColor = document.getElementById('bgColor').value;
     state.settings.bgImage = document.getElementById('bgImage').value.trim();
     state.settings.showLabels = document.getElementById('showLabels').checked;
-    state.settings.showSidebar = document.getElementById('showSidebar').checked;
-    saveState();
-    applySettings();
+    state.settings.showHeaders = document.getElementById('showSectionHeaders').checked;
+    saveState(); applySettings();
     document.getElementById('settingsModal').classList.remove('active');
 }
 
 function applySettings() {
-    document.body.style.backgroundColor = state.settings.bgColor || '#0f1923';
-    if (state.settings.bgImage) {
-        document.body.style.backgroundImage = `url(${state.settings.bgImage})`;
-        document.body.classList.add('has-bg-image');
-    } else {
-        document.body.style.backgroundImage = '';
-        document.body.classList.remove('has-bg-image');
-    }
-    document.body.classList.toggle('hide-labels', state.settings.showLabels === false);
-    document.body.classList.toggle('hide-sidebar', state.settings.showSidebar === false);
+    const s = state.settings;
+    document.body.style.backgroundColor = s.bgColor || '#0f1923';
+    document.body.style.backgroundImage = s.bgImage ? `url(${s.bgImage})` : '';
+    document.body.classList.toggle('hide-labels', s.showLabels === false);
+    document.body.classList.toggle('hide-headers', s.showHeaders === false);
 }
 
 // ---- Drag & Drop ----
 function setupDragAndDrop() {
-    const container = document.getElementById('gridContainer');
-    let dragId = null;
-
-    container.addEventListener('dragstart', (e) => {
-        const tile = e.target.closest('.tile[data-id]');
-        if (!tile) return;
-        dragId = tile.dataset.id;
-        tile.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-    });
-
-    container.addEventListener('dragend', (e) => {
-        const tile = e.target.closest('.tile');
-        if (tile) tile.classList.remove('dragging');
-        container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    });
-
-    container.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        const tile = e.target.closest('.tile[data-id]');
-        if (tile && tile.dataset.id !== dragId) {
-            container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-            tile.classList.add('drag-over');
-        }
-    });
-
-    container.addEventListener('dragleave', (e) => {
-        const tile = e.target.closest('.tile');
-        if (tile) tile.classList.remove('drag-over');
-    });
-
-    container.addEventListener('drop', (e) => {
-        e.preventDefault();
-        container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        const targetTile = e.target.closest('.tile[data-id]');
-        if (!targetTile || !dragId || targetTile.dataset.id === dragId) return;
-
-        const fromIdx = state.tiles.findIndex(t => t.id === dragId);
-        const toIdx = state.tiles.findIndex(t => t.id === targetTile.dataset.id);
-        if (fromIdx === -1 || toIdx === -1) return;
-
-        const [moved] = state.tiles.splice(fromIdx, 1);
-        state.tiles.splice(toIdx, 0, moved);
-        saveState();
-        renderGrid();
+    document.querySelectorAll('.tile-grid').forEach(grid => {
+        let dragId = null;
+        grid.addEventListener('dragstart', e => {
+            const t = e.target.closest('.tile[data-id]'); if (!t) return;
+            dragId = t.dataset.id; t.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        grid.addEventListener('dragend', e => {
+            const t = e.target.closest('.tile'); if (t) t.classList.remove('dragging');
+            grid.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+        });
+        grid.addEventListener('dragover', e => {
+            e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+            const t = e.target.closest('.tile[data-id]');
+            if (t && t.dataset.id !== dragId) {
+                grid.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+                t.classList.add('drag-over');
+            }
+        });
+        grid.addEventListener('dragleave', e => {
+            const t = e.target.closest('.tile'); if (t) t.classList.remove('drag-over');
+        });
+        grid.addEventListener('drop', e => {
+            e.preventDefault();
+            grid.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+            const target = e.target.closest('.tile[data-id]');
+            if (!target || !dragId || target.dataset.id === dragId) return;
+            const fi = state.tiles.findIndex(t => t.id === dragId);
+            const ti = state.tiles.findIndex(t => t.id === target.dataset.id);
+            if (fi === -1 || ti === -1) return;
+            const [m] = state.tiles.splice(fi, 1);
+            state.tiles.splice(ti, 0, m);
+            saveState(); renderPage();
+        });
     });
 }
 
@@ -688,143 +618,70 @@ function setupDragAndDrop() {
 function setupSearch() {
     const input = document.getElementById('searchInput');
     const results = document.getElementById('searchResults');
-
     input.addEventListener('input', () => {
-        const query = input.value.trim().toLowerCase();
-        if (!query) { results.classList.remove('active'); results.innerHTML = ''; return; }
-
-        const matches = state.tiles.filter(t =>
-            t.name.toLowerCase().includes(query) ||
-            t.url.toLowerCase().includes(query)
-        ).slice(0, 8);
-
+        const q = input.value.trim().toLowerCase();
+        if (!q) { results.classList.remove('active'); results.innerHTML = ''; return; }
+        const matches = state.tiles.filter(t => !t.widgetType && (t.name.toLowerCase().includes(q) || t.url.toLowerCase().includes(q))).slice(0, 8);
         results.innerHTML = '';
-
         matches.forEach(tile => {
             const item = document.createElement('div');
             item.className = 'search-result-item';
-            const logoSrc = tile.customIconUrl || getLogoUrl(tile.url);
-            item.innerHTML = `
-                <div class="result-icon" style="background:${tile.color}">
-                    <img src="${logoSrc}" alt="" onerror="this.src='${getGoogleFavicon(tile.url, 64)}'; this.onerror=function(){this.style.display='none'};">
-                </div>
-                <div class="result-info">
-                    <div class="result-name">${escapeHtml(tile.name)}</div>
-                    <div class="result-url">${escapeHtml(tile.url)}</div>
-                </div>
-            `;
-            item.addEventListener('click', () => {
-                window.open(tile.url, '_blank');
-                input.value = '';
-                results.classList.remove('active');
-            });
+            item.innerHTML = `<div class="result-icon" style="background:${tile.color}"><img src="${tile.customIconUrl || getLogoUrl(tile.url)}" alt="" onerror="this.src='${getGoogleFavicon(tile.url,32)}';this.onerror=null"></div><div class="result-info"><div class="result-name">${esc(tile.name)}</div><div class="result-url">${esc(tile.url)}</div></div>`;
+            item.addEventListener('click', () => { window.open(tile.url, '_blank'); input.value = ''; results.classList.remove('active'); });
             results.appendChild(item);
         });
-
-        // Web search option
-        const webItem = document.createElement('div');
-        webItem.className = 'search-result-web';
-        const engine = SEARCH_ENGINES[state.settings.searchEngine || 0];
-        webItem.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> Search "${escapeHtml(input.value)}" on ${engine.name}`;
-        webItem.addEventListener('click', () => {
-            window.open(engine.url + encodeURIComponent(input.value), '_blank');
-            input.value = '';
-            results.classList.remove('active');
-        });
-        results.appendChild(webItem);
-
+        const web = document.createElement('div');
+        web.className = 'search-result-web';
+        const eng = SEARCH_ENGINES[state.settings.searchEngine || 0];
+        web.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> Search "${esc(input.value)}" on ${eng.name}`;
+        web.addEventListener('click', () => { window.open(eng.url + encodeURIComponent(input.value), '_blank'); input.value = ''; results.classList.remove('active'); });
+        results.appendChild(web);
         results.classList.add('active');
     });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const query = input.value.trim();
-            if (!query) return;
-            const match = state.tiles.find(t => t.name.toLowerCase().includes(query.toLowerCase()));
-            if (match) {
-                window.open(match.url, '_blank');
-            } else {
-                const engine = SEARCH_ENGINES[state.settings.searchEngine || 0];
-                window.open(engine.url + encodeURIComponent(query), '_blank');
-            }
-            input.value = '';
-            results.classList.remove('active');
-        } else if (e.key === 'Escape') {
-            input.value = '';
-            results.classList.remove('active');
-        }
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { const q = input.value.trim(); if (!q) return; const m = state.tiles.find(t => !t.widgetType && t.name.toLowerCase().includes(q.toLowerCase())); if (m) window.open(m.url,'_blank'); else window.open(SEARCH_ENGINES[state.settings.searchEngine||0].url+encodeURIComponent(q),'_blank'); input.value=''; results.classList.remove('active'); }
+        else if (e.key==='Escape') { input.value=''; results.classList.remove('active'); }
     });
-
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.header-center')) {
-            results.classList.remove('active');
-        }
-    });
-
-    // Search engine toggle
+    document.addEventListener('click', e => { if (!e.target.closest('.header-center')) results.classList.remove('active'); });
     document.getElementById('searchEngineToggle').addEventListener('click', () => {
-        state.settings.searchEngine = ((state.settings.searchEngine || 0) + 1) % SEARCH_ENGINES.length;
-        const engine = SEARCH_ENGINES[state.settings.searchEngine];
-        document.getElementById('searchEngineIcon').src = engine.icon;
-        document.getElementById('searchEngineIcon').alt = engine.name;
+        state.settings.searchEngine = ((state.settings.searchEngine||0)+1) % SEARCH_ENGINES.length;
+        const eng = SEARCH_ENGINES[state.settings.searchEngine];
+        document.getElementById('searchEngineIcon').src = eng.icon;
         saveState();
     });
 }
 
 // ---- Clock ----
 function startClock() {
-    const clockEl = document.getElementById('clock');
-    function update() {
-        clockEl.textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    }
-    update();
-    setInterval(update, 30000);
+    const el = document.getElementById('clock');
+    const upd = () => { el.textContent = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+    upd(); setInterval(upd, 30000);
 }
 
 // ---- Event Listeners ----
 function setupEventListeners() {
-    // Size slider
     const slider = document.getElementById('tileSizeSlider');
-    slider.value = state.settings.tileSize || 100;
-    slider.addEventListener('input', () => {
-        const size = parseInt(slider.value);
-        state.settings.tileSize = size;
-        applyTileSize(size);
-        saveState();
-    });
+    slider.value = state.settings.tileSize || 90;
+    slider.addEventListener('input', () => { state.settings.tileSize = parseInt(slider.value); applyTileSize(state.settings.tileSize); saveState(); });
 
-    // Toggle labels
-    const labelBtn = document.getElementById('toggleLabels');
-    labelBtn.classList.toggle('active', state.settings.showLabels !== false);
-    labelBtn.addEventListener('click', () => {
-        state.settings.showLabels = !state.settings.showLabels;
-        labelBtn.classList.toggle('active', state.settings.showLabels);
-        document.body.classList.toggle('hide-labels', !state.settings.showLabels);
-        saveState();
-    });
+    const lblBtn = document.getElementById('toggleLabels');
+    lblBtn.classList.toggle('active', state.settings.showLabels !== false);
+    lblBtn.addEventListener('click', () => { state.settings.showLabels = !state.settings.showLabels; lblBtn.classList.toggle('active', state.settings.showLabels); document.body.classList.toggle('hide-labels', !state.settings.showLabels); saveState(); });
 
-    // Edit mode
-    document.getElementById('editModeBtn').addEventListener('click', () => {
-        state.editMode = !state.editMode;
-        document.body.classList.toggle('edit-mode', state.editMode);
-        document.getElementById('editModeBtn').classList.toggle('active', state.editMode);
-    });
-
-    // Add tile
-    document.getElementById('addTileBtn').addEventListener('click', openAddModal);
-
-    // Settings
+    document.getElementById('editModeBtn').addEventListener('click', () => { state.editMode = !state.editMode; document.body.classList.toggle('edit-mode', state.editMode); document.getElementById('editModeBtn').classList.toggle('active', state.editMode); renderPage(); });
+    document.getElementById('addTileBtn').addEventListener('click', () => openAddModal());
     document.getElementById('settingsBtn').addEventListener('click', openSettings);
-    document.getElementById('settingsClose').addEventListener('click', () => {
-        document.getElementById('settingsModal').classList.remove('active');
-    });
+    document.getElementById('settingsClose').addEventListener('click', () => document.getElementById('settingsModal').classList.remove('active'));
     document.getElementById('settingsSave').addEventListener('click', saveSettings);
-
-    // Tile modal
     document.getElementById('modalClose').addEventListener('click', closeTileModal);
     document.getElementById('modalCancel').addEventListener('click', closeTileModal);
     document.getElementById('modalSave').addEventListener('click', saveTileFromModal);
-    document.getElementById('modalDelete').addEventListener('click', deleteTileFromModal);
+    document.getElementById('modalDelete').addEventListener('click', deleteTile);
+
+    // Size picker
+    document.querySelectorAll('.size-option').forEach(o => {
+        o.addEventListener('click', () => { document.querySelectorAll('.size-option').forEach(x => x.classList.remove('selected')); o.classList.add('selected'); });
+    });
 
     // Add category
     document.getElementById('addCategoryBtn').addEventListener('click', () => {
@@ -832,114 +689,35 @@ function setupEventListeners() {
         const color = document.getElementById('newCategoryColor').value;
         if (!name) return;
         const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        if (state.categories.find(c => c.id === id)) { alert('Category already exists'); return; }
+        if (state.categories.find(c => c.id === id)) { alert('Exists'); return; }
         state.categories.push({ id, name, color });
         document.getElementById('newCategoryName').value = '';
-        saveState();
-        renderMarkers();
+        saveState(); renderPage();
     });
 
-    // Export / Import
-    document.getElementById('exportBtn').addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'twlf-portal-backup.json';
-        a.click();
-        URL.revokeObjectURL(a.href);
-    });
-
-    document.getElementById('importBtn').addEventListener('click', () => {
-        document.getElementById('importFile').click();
-    });
-
-    document.getElementById('importFile').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            try {
-                const imported = JSON.parse(ev.target.result);
-                state = { ...state, ...imported };
-                saveState();
-                applyTileSize(state.settings.tileSize);
-                applySettings();
-                renderMarkers();
-                renderGrid();
-                initWidgets();
-                alert('Import successful!');
-            } catch {
-                alert('Invalid backup file.');
-            }
-        };
-        reader.readAsText(file);
-        e.target.value = '';
-    });
-
-    // Reset
-    document.getElementById('resetBtn').addEventListener('click', () => {
-        if (!confirm('Reset all data to defaults? This cannot be undone.')) return;
-        localStorage.removeItem('twlf-portal-state-v3');
-        resetToDefaults();
-        applyTileSize(state.settings.tileSize);
-        applySettings();
-        renderMarkers();
-        renderGrid();
-        initWidgets();
-        document.getElementById('settingsModal').classList.remove('active');
-    });
+    // Export/Import/Reset
+    document.getElementById('exportBtn').addEventListener('click', () => { const b = new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'twlf-portal-backup.json'; a.click(); });
+    document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+    document.getElementById('importFile').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { try { state = { ...state, ...JSON.parse(ev.target.result) }; saveState(); applyTileSize(state.settings.tileSize); applySettings(); renderPage(); alert('Done!'); } catch { alert('Invalid file.'); } }; r.readAsText(f); e.target.value=''; });
+    document.getElementById('resetBtn').addEventListener('click', () => { if (!confirm('Reset everything?')) return; localStorage.removeItem('twlf-portal-v4'); resetToDefaults(); applyTileSize(state.settings.tileSize); applySettings(); renderPage(); document.getElementById('settingsModal').classList.remove('active'); });
 
     // Context menu
-    document.querySelectorAll('.context-item[data-action]').forEach(item => {
-        item.addEventListener('click', () => handleContextAction(item.dataset.action));
-    });
+    document.querySelectorAll('.context-item[data-action]').forEach(i => i.addEventListener('click', () => handleCtx(i.dataset.action)));
+    document.addEventListener('click', e => { if (!e.target.closest('.context-menu')) hideContextMenu(); });
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.context-menu')) hideContextMenu();
-    });
+    // Close modals on overlay
+    document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); }));
 
-    // Close modals on overlay click
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) overlay.classList.remove('active');
-        });
-    });
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
-            hideContextMenu();
-        }
-        if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && !e.target.closest('input, textarea'))) {
-            e.preventDefault();
-            document.getElementById('searchInput').focus();
-        }
+    // Keyboard
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active')); hideContextMenu(); }
+        if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && !e.target.closest('input,textarea'))) { e.preventDefault(); document.getElementById('searchInput').focus(); }
     });
 }
 
 // ---- Utilities ----
-function hexToRgba(hex, alpha) {
-    hex = hex.replace('#', '');
-    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function rgbToHex(rgb) {
-    if (rgb.startsWith('#')) return rgb;
-    const match = rgb.match(/\d+/g);
-    if (!match) return rgb;
-    return '#' + match.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
-}
+function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+function hexToRgba(h, a) { h = h.replace('#',''); if (h.length===3) h = h.split('').map(c=>c+c).join(''); return `rgba(${parseInt(h.substr(0,2),16)},${parseInt(h.substr(2,2),16)},${parseInt(h.substr(4,2),16)},${a})`; }
 
 // ---- Start ----
 document.addEventListener('DOMContentLoaded', init);

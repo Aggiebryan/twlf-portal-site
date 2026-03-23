@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -33,7 +33,7 @@
     <div class="header-right">
       <div class="size-slider-wrap" title="Tile Size">
         <i class="fa-solid fa-compress size-icon-sm"></i>
-        <input type="range" id="tileSizeSlider" min="64" max="150" value="100" step="2">
+        <input type="range" id="tileSizeSlider" min="60" max="140" value="90" step="2">
         <i class="fa-solid fa-expand size-icon-lg"></i>
       </div>
       <button class="header-btn" id="toggleLabels" title="Toggle Labels">
@@ -52,64 +52,10 @@
     </div>
   </header>
 
-  <!-- Main Content Area: Grid + Sidebar Widgets -->
-  <div class="main-wrapper">
-    <main class="main-content">
-      <div class="grid-container" id="gridContainer"></div>
-    </main>
-
-    <!-- Sidebar Widgets (always visible) -->
-    <aside class="sidebar" id="sidebar">
-      <!-- Quick Notes Widget -->
-      <div class="widget-panel" id="notesWidget">
-        <div class="widget-header">
-          <h3><i class="fa-solid fa-sticky-note"></i> Quick Notes</h3>
-          <button class="widget-collapse-btn" data-widget="notesWidget" title="Collapse">
-            <i class="fa-solid fa-chevron-up"></i>
-          </button>
-        </div>
-        <div class="widget-body">
-          <textarea id="notesArea" placeholder="Type your notes here..." rows="6"></textarea>
-          <button class="btn btn-sm btn-primary" id="notesSaveBtn">Save</button>
-        </div>
-      </div>
-
-      <!-- To Do List Widget -->
-      <div class="widget-panel" id="todoWidget">
-        <div class="widget-header">
-          <h3><i class="fa-solid fa-list-check"></i> To Do List</h3>
-          <button class="widget-collapse-btn" data-widget="todoWidget" title="Collapse">
-            <i class="fa-solid fa-chevron-up"></i>
-          </button>
-        </div>
-        <div class="widget-body">
-          <div class="todo-input-row">
-            <input type="text" id="todoInput" placeholder="Add a task...">
-            <button class="btn btn-sm btn-primary" id="todoAddBtn">Add</button>
-          </div>
-          <ul class="todo-list" id="todoList"></ul>
-        </div>
-      </div>
-
-      <!-- Clio Grow Training Widget -->
-      <div class="widget-panel" id="clioWidget">
-        <div class="widget-header">
-          <h3><i class="fa-solid fa-play-circle"></i> Clio Grow Training</h3>
-          <button class="widget-collapse-btn" data-widget="clioWidget" title="Collapse">
-            <i class="fa-solid fa-chevron-up"></i>
-          </button>
-        </div>
-        <div class="widget-body">
-          <a href="https://www.loom.com/share/5234da14ff9a430ea7812dab55027ed2?sid=2f0ea8fb-1d16-434f-be50-c3c674b1bd0a" target="_blank" class="widget-link">
-            <i class="fa-solid fa-external-link-alt"></i> Open Clio Grow Training Video
-          </a>
-        </div>
-      </div>
-    </aside>
-  </div>
-
-  <!-- Category Tabs (Marker Bar) -->
-  <nav class="marker-bar" id="markerBar"></nav>
+  <!-- Main Scrollable Page — all categories visible -->
+  <main class="main-content" id="mainContent">
+    <!-- Rendered by JS: section headers + tile grids for each category -->
+  </main>
 
   <!-- Add/Edit Tile Modal -->
   <div class="modal-overlay" id="tileModal">
@@ -128,12 +74,37 @@
           <input type="url" id="tileUrl" placeholder="https://example.com">
         </div>
         <div class="form-group">
+          <label>Category</label>
+          <select id="tileCategory"></select>
+        </div>
+        <div class="form-group">
+          <label>Tile Size</label>
+          <div class="size-picker" id="sizePicker">
+            <div class="size-option selected" data-size="1x1"><div class="size-preview s1x1"></div><span>1×1</span></div>
+            <div class="size-option" data-size="2x1"><div class="size-preview s2x1"></div><span>2×1</span></div>
+            <div class="size-option" data-size="2x2"><div class="size-preview s2x2"></div><span>2×2</span></div>
+            <div class="size-option" data-size="3x1"><div class="size-preview s3x1"></div><span>3×1</span></div>
+            <div class="size-option" data-size="4x1"><div class="size-preview s4x1"></div><span>4×1</span></div>
+          </div>
+        </div>
+        <div class="form-group">
           <label>Color</label>
           <div class="color-picker" id="colorPicker"></div>
         </div>
         <div class="form-group">
           <label>Custom Icon URL (optional — leave blank for auto logo)</label>
           <input type="url" id="tileIconUrl" placeholder="https://example.com/icon.png">
+        </div>
+        <div class="form-group">
+          <label>Widget Type (optional)</label>
+          <select id="tileWidgetType">
+            <option value="">None (regular bookmark)</option>
+            <option value="search">Google Search</option>
+            <option value="clock">Clock</option>
+            <option value="notes">Quick Notes</option>
+            <option value="todo">To Do List</option>
+            <option value="weather">Weather</option>
+          </select>
         </div>
       </div>
       <div class="modal-footer">
@@ -153,22 +124,18 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label>Background Color</label>
-          <input type="color" id="bgColor" value="#0f1923">
-        </div>
-        <div class="form-group">
           <label>Background Image URL (optional)</label>
           <input type="url" id="bgImage" placeholder="https://example.com/image.jpg">
         </div>
         <div class="form-group">
-          <label>
-            <input type="checkbox" id="showLabels" checked> Show Tile Labels
-          </label>
+          <label>Background Color (used if no image)</label>
+          <input type="color" id="bgColor" value="#0f1923">
         </div>
         <div class="form-group">
-          <label>
-            <input type="checkbox" id="showSidebar" checked> Show Sidebar Widgets
-          </label>
+          <label><input type="checkbox" id="showLabels" checked> Show Tile Labels</label>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="showSectionHeaders" checked> Show Section Headers</label>
         </div>
         <div class="form-group">
           <label>Add New Category</label>
@@ -199,6 +166,7 @@
   <!-- Context Menu -->
   <div class="context-menu" id="contextMenu">
     <div class="context-item" data-action="edit"><i class="fa-solid fa-pen"></i> Edit</div>
+    <div class="context-item" data-action="resize"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> Resize</div>
     <div class="context-item" data-action="color"><i class="fa-solid fa-palette"></i> Change Color</div>
     <div class="context-item" data-action="duplicate"><i class="fa-solid fa-clone"></i> Duplicate</div>
     <div class="context-item context-divider"></div>
