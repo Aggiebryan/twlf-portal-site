@@ -505,25 +505,106 @@ function renderGrid() {
 
         tiles.forEach(t => grid.appendChild(createTile(t)));
 
-        // Empty cells to fill remaining row
-        const totalCells = tiles.length;
-        const remainder = totalCells % cols;
-        const emptyCellCount = remainder === 0 ? cols : (cols - remainder);
-        for (let i = 0; i < emptyCellCount; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'empty-cell';
-            empty.innerHTML = '<i class="fa-solid fa-plus empty-icon"></i>';
-            empty.addEventListener('click', () => openAddModal(cat.id));
-            grid.appendChild(empty);
-        }
-
         section.appendChild(grid);
         container.appendChild(section);
     });
 
     setupDragAndDrop();
     setupCategoryDragAndDrop();
+    layoutMasonry();
 }
+
+// ---- Masonry Layout ----
+function layoutMasonry() {
+    const container = document.getElementById('gridContainer');
+    const cards = Array.from(container.querySelectorAll('.category-section'));
+    if (cards.length === 0) return;
+
+    const containerWidth = container.clientWidth;
+    const gap = 16;
+
+    // Measure each card's natural width and height
+    // Temporarily make them position:static to get natural sizes
+    cards.forEach(c => {
+        c.style.position = 'static';
+        c.style.left = '';
+        c.style.top = '';
+    });
+
+    // Force layout to get accurate dimensions
+    container.offsetHeight;
+
+    const cardSizes = cards.map(c => ({
+        el: c,
+        w: c.offsetWidth,
+        h: c.offsetHeight
+    }));
+
+    // Restore absolute positioning
+    cards.forEach(c => c.style.position = '');
+
+    // Simple greedy masonry: place each card in the column with the shortest height
+    // First, determine how many columns can fit
+    // Use the widths of the actual cards to pack them
+
+    // Column-based packing: track the bottom Y of each placed card
+    // We'll use a free-space approach: try to place each card at the position
+    // where it fits and has the smallest Y
+
+    const placed = [];
+
+    cardSizes.forEach(({ el, w, h }) => {
+        // Clamp width to container
+        const cardW = Math.min(w, containerWidth);
+
+        let bestX = 0, bestY = 0, bestBottom = Infinity;
+
+        // Try each possible X position (left-aligned to existing card edges or 0)
+        const xPositions = [0];
+        placed.forEach(p => {
+            xPositions.push(p.x + p.w + gap);
+        });
+
+        // Remove duplicates and sort
+        const uniqueX = [...new Set(xPositions)].sort((a, b) => a - b);
+
+        for (const x of uniqueX) {
+            if (x + cardW > containerWidth + 1) continue; // doesn't fit
+
+            // Find the highest Y where this card can be placed at this X
+            // It must not overlap any placed card
+            let y = 0;
+            for (const p of placed) {
+                // Check horizontal overlap
+                if (x < p.x + p.w + gap && x + cardW > p.x - gap) {
+                    // Overlaps horizontally - must go below
+                    y = Math.max(y, p.y + p.h + gap);
+                }
+            }
+
+            if (y < bestBottom) {
+                bestBottom = y;
+                bestX = x;
+                bestY = y;
+            }
+        }
+
+        el.style.left = bestX + 'px';
+        el.style.top = bestY + 'px';
+        placed.push({ x: bestX, y: bestY, w: cardW, h });
+    });
+
+    // Set container height to fit all cards
+    const maxBottom = placed.reduce((max, p) => Math.max(max, p.y + p.h), 0);
+    container.style.minHeight = (maxBottom + 40) + 'px';
+}
+
+// Re-layout on window resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(layoutMasonry, 150);
+});
 
 // ---- Category Drag & Drop ----
 let catDragId = null;
@@ -1249,6 +1330,7 @@ function setupEventListeners() {
             const cat = dash.categories.find(c => c.id === catId);
             if (cat) sec.style.width = getCatWidth(cat.columns || 6, cat.tileSize) + 'px';
         });
+        layoutMasonry();
         saveState();
     });
 
@@ -1546,6 +1628,7 @@ function openCatSettings(cat, anchorEl) {
         </div>
         <div class="cat-settings-footer">
             <button class="btn btn-danger btn-sm cs-delete-cat" style="margin-right:auto"><i class="fa-solid fa-trash"></i> Delete</button>
+            <button class="btn btn-secondary cs-add-tile"><i class="fa-solid fa-plus"></i> Add Tile</button>
             <button class="btn btn-secondary cs-cancel">Cancel</button>
             <button class="btn btn-primary cs-save">Save</button>
         </div>
@@ -1600,6 +1683,12 @@ function openCatSettings(cat, anchorEl) {
     // Close
     popover.querySelector('.cat-settings-close').addEventListener('click', closeCatSettings);
     popover.querySelector('.cs-cancel').addEventListener('click', closeCatSettings);
+
+    // Add Tile
+    popover.querySelector('.cs-add-tile').addEventListener('click', () => {
+        closeCatSettings();
+        openAddModal(cat.id);
+    });
 
     // Delete
     popover.querySelector('.cs-delete-cat').addEventListener('click', () => {

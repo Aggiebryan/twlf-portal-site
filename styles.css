@@ -295,10 +295,12 @@ body {
 
 .grid-container {
     flex: 1; padding: 16px 24px 40px;
-    display: flex; flex-wrap: wrap;
-    gap: 16px;
-    align-items: flex-start;
-    align-content: flex-start;
+    position: relative;
+}
+
+.grid-container .category-section {
+    position: absolute;
+    transition: transform 0.3s ease, left 0.3s ease, top 0.3s ease;
 }
 
 /* ---- Category Section (grouped card) ---- */
@@ -552,30 +554,7 @@ body.shape-circle .tile .tile-icon img { border-radius: 50%; }
 
 body.hide-labels .tile .tile-label { display: none; }
 
-/* ---- Empty Cells ---- */
-.empty-cell {
-    border-radius: var(--radius);
-    border: 2px dashed var(--border-color);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.15s;
-    min-width: 0;
-    grid-column: span 1; grid-row: span 1;
-}
-body.shape-circle .empty-cell { border-radius: 50%; }
-body.shape-rectangle .empty-cell { border-radius: 6px; }
-
-.empty-cell .empty-icon {
-    font-size: 16px; color: var(--text-muted); opacity: 0;
-    transition: opacity 0.15s;
-}
-.empty-cell:hover {
-    border-color: var(--accent);
-    background: rgba(23,214,229,0.05);
-}
-.empty-cell:hover .empty-icon { opacity: 1; color: var(--accent); }
-
-body:not(.show-empty) .empty-cell { display: none; }
-body.edit-mode .empty-cell { display: flex; }
+/* Empty cells removed - use category menu to add tiles */
 
 /* ---- Widget Tiles ---- */
 .tile.widget-tile {
