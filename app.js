@@ -1,14 +1,27 @@
 /* ============================================
    TWLF Portal - Application Logic
-   Real logos via favicon APIs, resizable tiles
+   Real brand logos via Clearbit + fallbacks
+   Inline sidebar widgets (notes, todo)
    ============================================ */
 
-// ---- Favicon helpers ----
-function getFaviconUrl(url, size) {
+// ---- Logo / Icon helpers ----
+// Clearbit returns actual brand logos (not tiny favicons)
+// Fallback chain: Clearbit -> Google HD favicon -> letter
+function getLogoUrl(url) {
+    try {
+        const hostname = new URL(url).hostname;
+        // strip www. for cleaner Clearbit lookups
+        const domain = hostname.replace(/^www\./, '');
+        return `https://logo.clearbit.com/${domain}`;
+    } catch {
+        return '';
+    }
+}
+
+function getGoogleFavicon(url, size) {
     size = size || 128;
     try {
         const domain = new URL(url).hostname;
-        // Google's high-res favicon service
         return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
     } catch {
         return '';
@@ -17,21 +30,19 @@ function getFaviconUrl(url, size) {
 
 // ---- Default Data (from Start.me) ----
 const DEFAULT_CATEGORIES = [
-    { id: 'most-used',   name: 'Most Used',          color: '#17D6E5' },
-    { id: 'govt',        name: 'Government Offices',  color: '#FF017B' },
-    { id: 'web-pages',   name: 'TWLF Web Pages',      color: '#51CA20' },
-    { id: 'reference',   name: 'Reference',            color: '#FFBE00' },
-    { id: 'writing-ai',  name: 'Writing & AI',         color: '#9B59B6' },
-    { id: 'ai-tools',    name: 'AI Tools',             color: '#E67E22' },
-    { id: 'social',      name: 'Social Media',         color: '#3498DB' },
-    { id: 'texas-bar',   name: 'Texas Bar',            color: '#E74C3C' },
-    { id: 'associations',name: 'Associations',          color: '#1ABC9C' },
-    { id: 'law-books',   name: 'Law Books',            color: '#8E44AD' },
-    { id: 'experts',     name: 'Experts',              color: '#F39C12' },
-    { id: 'widgets',     name: 'Widgets',              color: '#95A5A6' }
+    { id: 'most-used',   name: 'Most Used',           color: '#17D6E5' },
+    { id: 'govt',        name: 'Government Offices',   color: '#FF017B' },
+    { id: 'web-pages',   name: 'TWLF Web Pages',       color: '#51CA20' },
+    { id: 'reference',   name: 'Reference',             color: '#FFBE00' },
+    { id: 'writing-ai',  name: 'Writing & AI',          color: '#9B59B6' },
+    { id: 'ai-tools',    name: 'AI Tools',              color: '#E67E22' },
+    { id: 'social',      name: 'Social Media',          color: '#3498DB' },
+    { id: 'texas-bar',   name: 'Texas Bar',             color: '#E74C3C' },
+    { id: 'associations',name: 'Associations',           color: '#1ABC9C' },
+    { id: 'law-books',   name: 'Law Books',             color: '#8E44AD' },
+    { id: 'experts',     name: 'Experts',               color: '#F39C12' }
 ];
 
-// Tiles — no FA icon, uses favicon automatically
 const DEFAULT_TILES = [
     // ─── Most Used ───
     { id: 't1',  name: 'Clio',                  url: 'https://account.clio.com/',               category: 'most-used', color: '#0B70CE' },
@@ -140,11 +151,6 @@ const DEFAULT_TILES = [
     // ─── Experts ───
     { id: 't85', name: 'JurisPro',            url: 'https://www.jurispro.com/',                  category: 'experts', color: '#D4A017' },
     { id: 't86', name: 'SEAK Experts',        url: 'https://www.seakexperts.com/',               category: 'experts', color: '#CA6F1E' },
-
-    // ─── Widgets ───
-    { id: 'w1',  name: 'Quick Notes',         url: '#notes',   category: 'widgets', color: '#5D6D7E', isWidget: true, widgetType: 'notes',  faIcon: 'fa-solid fa-sticky-note' },
-    { id: 'w2',  name: 'To Do List',          url: '#todo',    category: 'widgets', color: '#5D6D7E', isWidget: true, widgetType: 'todo',   faIcon: 'fa-solid fa-list-check' },
-    { id: 'w3',  name: 'Clio Grow Training',  url: 'https://www.loom.com/share/5234da14ff9a430ea7812dab55027ed2?sid=2f0ea8fb-1d16-434f-be50-c3c674b1bd0a', category: 'widgets', color: '#625DF5' },
 ];
 
 const TILE_COLORS = [
@@ -171,10 +177,12 @@ let state = {
         bgImage: '',
         tileSize: 100,
         showLabels: true,
+        showSidebar: true,
         searchEngine: 0
     },
     notes: '',
     todos: [],
+    collapsedWidgets: {},
     editMode: false,
     editingTile: null
 };
@@ -186,6 +194,7 @@ function init() {
     renderMarkers();
     renderGrid();
     applySettings();
+    initWidgets();
     startClock();
     setupEventListeners();
     setupDragAndDrop();
@@ -194,7 +203,7 @@ function init() {
 
 // ---- Persistence ----
 function loadState() {
-    const saved = localStorage.getItem('twlf-portal-state-v2');
+    const saved = localStorage.getItem('twlf-portal-state-v3');
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
@@ -212,7 +221,7 @@ function loadState() {
 }
 
 function saveState() {
-    localStorage.setItem('twlf-portal-state-v2', JSON.stringify(state));
+    localStorage.setItem('twlf-portal-state-v3', JSON.stringify(state));
 }
 
 function resetToDefaults() {
@@ -224,10 +233,12 @@ function resetToDefaults() {
         bgImage: '',
         tileSize: 100,
         showLabels: true,
+        showSidebar: true,
         searchEngine: 0
     };
     state.notes = '';
     state.todos = [];
+    state.collapsedWidgets = {};
     saveState();
 }
 
@@ -235,15 +246,9 @@ function resetToDefaults() {
 function applyTileSize(size) {
     size = parseInt(size) || 100;
     document.documentElement.style.setProperty('--tile-size', size + 'px');
-    // Scale border-radius proportionally
-    const radius = Math.max(8, Math.round(size * 0.16));
-    document.documentElement.style.setProperty('--tile-radius', radius + 'px');
-    // Scale label font
-    const labelSize = Math.max(8, Math.min(13, Math.round(size * 0.1)));
-    document.documentElement.style.setProperty('--label-size', labelSize + 'px');
-    // Scale gap
-    const gap = Math.max(4, Math.round(size * 0.07));
-    document.documentElement.style.setProperty('--tile-gap', gap + 'px');
+    document.documentElement.style.setProperty('--tile-radius', Math.max(8, Math.round(size * 0.16)) + 'px');
+    document.documentElement.style.setProperty('--label-size', Math.max(8, Math.min(13, Math.round(size * 0.1))) + 'px');
+    document.documentElement.style.setProperty('--tile-gap', Math.max(4, Math.round(size * 0.07)) + 'px');
 }
 
 // ---- Rendering ----
@@ -285,19 +290,16 @@ function renderGrid() {
     const activeTiles = state.tiles.filter(t => t.category === state.activeCategory);
 
     activeTiles.forEach(tile => {
-        const el = createTileElement(tile);
-        container.appendChild(el);
+        container.appendChild(createTileElement(tile));
     });
 
-    // Fill with empty slots for visual grid consistency
+    // Fill with empty slots
     const minSlots = 24;
     const remaining = Math.max(0, minSlots - activeTiles.length);
     for (let i = 0; i < remaining; i++) {
         const empty = document.createElement('div');
         empty.className = 'tile empty-slot';
-        empty.addEventListener('click', () => {
-            if (state.editMode) openAddModal();
-        });
+        empty.addEventListener('click', () => { if (state.editMode) openAddModal(); });
         container.appendChild(empty);
     }
 }
@@ -305,35 +307,39 @@ function renderGrid() {
 function createTileElement(tile) {
     const el = document.createElement('div');
     el.className = 'tile';
-    if (tile.isWidget) el.classList.add('widget-tile');
     el.style.background = tile.color || '#333';
     el.dataset.id = tile.id;
     el.draggable = true;
 
-    // ── Icon / Logo ──
+    // ── Logo with fallback chain ──
     const iconDiv = document.createElement('div');
     iconDiv.className = 'tile-icon';
 
-    if (tile.faIcon) {
-        // Widget-type tiles with a Font Awesome icon
-        const i = document.createElement('i');
-        i.className = tile.faIcon + ' fa-icon-fallback';
-        iconDiv.appendChild(i);
-    } else if (tile.customIconUrl) {
-        // User-provided custom icon
-        const img = document.createElement('img');
-        img.src = tile.customIconUrl;
-        img.alt = tile.name;
-        img.loading = 'lazy';
-        img.onerror = function () { showFallbackIcon(this, tile); };
+    if (tile.customIconUrl) {
+        // User-specified custom icon
+        const img = createLogoImg(tile.customIconUrl, tile);
         iconDiv.appendChild(img);
     } else {
-        // Auto-fetch real favicon/logo
+        // Try Clearbit first, then Google favicon, then letter
         const img = document.createElement('img');
-        img.src = getFaviconUrl(tile.url, 128);
+        const clearbitUrl = getLogoUrl(tile.url);
+        const googleUrl = getGoogleFavicon(tile.url, 128);
+
+        img.src = clearbitUrl;
         img.alt = tile.name;
         img.loading = 'lazy';
-        img.onerror = function () { showFallbackIcon(this, tile); };
+        img.onerror = function () {
+            // Clearbit failed → try Google favicon
+            if (this.src !== googleUrl && googleUrl) {
+                this.onerror = function () {
+                    // Google also failed → show letter
+                    showLetterFallback(this.parentElement, tile);
+                };
+                this.src = googleUrl;
+            } else {
+                showLetterFallback(this.parentElement, tile);
+            }
+        };
         iconDiv.appendChild(img);
     }
     el.appendChild(iconDiv);
@@ -347,7 +353,6 @@ function createTileElement(tile) {
     // ── Click ──
     el.addEventListener('click', (e) => {
         if (state.editMode) { e.preventDefault(); openEditModal(tile); return; }
-        if (tile.isWidget) { e.preventDefault(); handleWidget(tile); return; }
         window.open(tile.url, '_blank');
     });
 
@@ -360,31 +365,80 @@ function createTileElement(tile) {
     return el;
 }
 
-function showFallbackIcon(imgEl, tile) {
-    // Replace broken img with first-letter circle
-    const parent = imgEl.parentElement;
+function createLogoImg(src, tile) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = tile.name;
+    img.loading = 'lazy';
+    img.onerror = function () { showLetterFallback(this.parentElement, tile); };
+    return img;
+}
+
+function showLetterFallback(parent, tile) {
     parent.innerHTML = '';
     const span = document.createElement('span');
-    span.className = 'fa-icon-fallback';
+    span.className = 'letter-fallback';
     span.textContent = (tile.name || '?')[0].toUpperCase();
-    span.style.cssText = 'font-weight:700; opacity:0.85;';
     parent.appendChild(span);
 }
 
-// ---- Widgets ----
-function handleWidget(tile) {
-    if (tile.widgetType === 'notes') openNotesModal();
-    else if (tile.widgetType === 'todo') openTodoModal();
-}
-
-function openNotesModal() {
+// ---- Inline Widgets ----
+function initWidgets() {
+    // Load notes
     document.getElementById('notesArea').value = state.notes || '';
-    document.getElementById('notesModal').classList.add('active');
+
+    // Load todos
+    renderTodos();
+
+    // Restore collapsed state
+    Object.keys(state.collapsedWidgets || {}).forEach(widgetId => {
+        if (state.collapsedWidgets[widgetId]) {
+            const el = document.getElementById(widgetId);
+            if (el) el.classList.add('collapsed');
+        }
+    });
+
+    // Collapse toggle buttons
+    document.querySelectorAll('.widget-collapse-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const widgetId = btn.dataset.widget;
+            const panel = document.getElementById(widgetId);
+            if (!panel) return;
+            panel.classList.toggle('collapsed');
+            if (!state.collapsedWidgets) state.collapsedWidgets = {};
+            state.collapsedWidgets[widgetId] = panel.classList.contains('collapsed');
+            saveState();
+        });
+    });
+
+    // Notes save
+    document.getElementById('notesSaveBtn').addEventListener('click', () => {
+        state.notes = document.getElementById('notesArea').value;
+        saveState();
+    });
+
+    // Auto-save notes on blur
+    document.getElementById('notesArea').addEventListener('blur', () => {
+        state.notes = document.getElementById('notesArea').value;
+        saveState();
+    });
+
+    // Todo add
+    document.getElementById('todoAddBtn').addEventListener('click', addTodo);
+    document.getElementById('todoInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addTodo();
+    });
 }
 
-function openTodoModal() {
+function addTodo() {
+    const input = document.getElementById('todoInput');
+    const text = input.value.trim();
+    if (!text) return;
+    if (!state.todos) state.todos = [];
+    state.todos.push({ text, done: false });
+    input.value = '';
+    saveState();
     renderTodos();
-    document.getElementById('todoModal').classList.add('active');
 }
 
 function renderTodos() {
@@ -440,6 +494,7 @@ function renderColorPicker(selectedColor) {
         const swatch = document.createElement('div');
         swatch.className = `color-swatch${color === selectedColor ? ' selected' : ''}`;
         swatch.style.background = color;
+        swatch.dataset.hex = color;
         swatch.addEventListener('click', () => {
             picker.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
             swatch.classList.add('selected');
@@ -451,8 +506,7 @@ function renderColorPicker(selectedColor) {
 function getSelectedColor() {
     const selected = document.querySelector('#colorPicker .color-swatch.selected');
     if (!selected) return TILE_COLORS[0];
-    const bg = selected.style.backgroundColor || selected.style.background;
-    return rgbToHex(bg);
+    return selected.dataset.hex || TILE_COLORS[0];
 }
 
 function saveTileFromModal() {
@@ -552,6 +606,7 @@ function openSettings() {
     document.getElementById('bgColor').value = state.settings.bgColor || '#0f1923';
     document.getElementById('bgImage').value = state.settings.bgImage || '';
     document.getElementById('showLabels').checked = state.settings.showLabels !== false;
+    document.getElementById('showSidebar').checked = state.settings.showSidebar !== false;
     document.getElementById('settingsModal').classList.add('active');
 }
 
@@ -559,6 +614,7 @@ function saveSettings() {
     state.settings.bgColor = document.getElementById('bgColor').value;
     state.settings.bgImage = document.getElementById('bgImage').value.trim();
     state.settings.showLabels = document.getElementById('showLabels').checked;
+    state.settings.showSidebar = document.getElementById('showSidebar').checked;
     saveState();
     applySettings();
     document.getElementById('settingsModal').classList.remove('active');
@@ -573,11 +629,8 @@ function applySettings() {
         document.body.style.backgroundImage = '';
         document.body.classList.remove('has-bg-image');
     }
-    if (state.settings.showLabels === false) {
-        document.body.classList.add('hide-labels');
-    } else {
-        document.body.classList.remove('hide-labels');
-    }
+    document.body.classList.toggle('hide-labels', state.settings.showLabels === false);
+    document.body.classList.toggle('hide-sidebar', state.settings.showSidebar === false);
 }
 
 // ---- Drag & Drop ----
@@ -650,9 +703,10 @@ function setupSearch() {
         matches.forEach(tile => {
             const item = document.createElement('div');
             item.className = 'search-result-item';
+            const logoSrc = tile.customIconUrl || getLogoUrl(tile.url);
             item.innerHTML = `
                 <div class="result-icon" style="background:${tile.color}">
-                    <img src="${getFaviconUrl(tile.url, 64)}" alt="" onerror="this.style.display='none'">
+                    <img src="${logoSrc}" alt="" onerror="this.src='${getGoogleFavicon(tile.url, 64)}'; this.onerror=function(){this.style.display='none'};">
                 </div>
                 <div class="result-info">
                     <div class="result-name">${escapeHtml(tile.name)}</div>
@@ -721,8 +775,7 @@ function setupSearch() {
 function startClock() {
     const clockEl = document.getElementById('clock');
     function update() {
-        const now = new Date();
-        clockEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        clockEl.textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     }
     update();
     setInterval(update, 30000);
@@ -741,22 +794,14 @@ function setupEventListeners() {
     });
 
     // Toggle labels
-    document.getElementById('toggleLabels').addEventListener('click', () => {
+    const labelBtn = document.getElementById('toggleLabels');
+    labelBtn.classList.toggle('active', state.settings.showLabels !== false);
+    labelBtn.addEventListener('click', () => {
         state.settings.showLabels = !state.settings.showLabels;
-        const btn = document.getElementById('toggleLabels');
-        btn.classList.toggle('active', state.settings.showLabels);
-        if (state.settings.showLabels) {
-            document.body.classList.remove('hide-labels');
-        } else {
-            document.body.classList.add('hide-labels');
-        }
+        labelBtn.classList.toggle('active', state.settings.showLabels);
+        document.body.classList.toggle('hide-labels', !state.settings.showLabels);
         saveState();
     });
-
-    // Set initial label button state
-    if (state.settings.showLabels !== false) {
-        document.getElementById('toggleLabels').classList.add('active');
-    }
 
     // Edit mode
     document.getElementById('editModeBtn').addEventListener('click', () => {
@@ -780,34 +825,6 @@ function setupEventListeners() {
     document.getElementById('modalCancel').addEventListener('click', closeTileModal);
     document.getElementById('modalSave').addEventListener('click', saveTileFromModal);
     document.getElementById('modalDelete').addEventListener('click', deleteTileFromModal);
-
-    // Notes modal
-    document.getElementById('notesClose').addEventListener('click', () => {
-        document.getElementById('notesModal').classList.remove('active');
-    });
-    document.getElementById('notesSave').addEventListener('click', () => {
-        state.notes = document.getElementById('notesArea').value;
-        saveState();
-        document.getElementById('notesModal').classList.remove('active');
-    });
-
-    // Todo modal
-    document.getElementById('todoClose').addEventListener('click', () => {
-        document.getElementById('todoModal').classList.remove('active');
-    });
-    document.getElementById('todoAddBtn').addEventListener('click', () => {
-        const input = document.getElementById('todoInput');
-        const text = input.value.trim();
-        if (!text) return;
-        if (!state.todos) state.todos = [];
-        state.todos.push({ text, done: false });
-        input.value = '';
-        saveState();
-        renderTodos();
-    });
-    document.getElementById('todoInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') document.getElementById('todoAddBtn').click();
-    });
 
     // Add category
     document.getElementById('addCategoryBtn').addEventListener('click', () => {
@@ -849,6 +866,7 @@ function setupEventListeners() {
                 applySettings();
                 renderMarkers();
                 renderGrid();
+                initWidgets();
                 alert('Import successful!');
             } catch {
                 alert('Invalid backup file.');
@@ -861,20 +879,19 @@ function setupEventListeners() {
     // Reset
     document.getElementById('resetBtn').addEventListener('click', () => {
         if (!confirm('Reset all data to defaults? This cannot be undone.')) return;
-        localStorage.removeItem('twlf-portal-state-v2');
+        localStorage.removeItem('twlf-portal-state-v3');
         resetToDefaults();
         applyTileSize(state.settings.tileSize);
         applySettings();
         renderMarkers();
         renderGrid();
+        initWidgets();
         document.getElementById('settingsModal').classList.remove('active');
     });
 
     // Context menu
     document.querySelectorAll('.context-item[data-action]').forEach(item => {
-        item.addEventListener('click', () => {
-            handleContextAction(item.dataset.action);
-        });
+        item.addEventListener('click', () => handleContextAction(item.dataset.action));
     });
 
     document.addEventListener('click', (e) => {
@@ -894,7 +911,6 @@ function setupEventListeners() {
             document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
             hideContextMenu();
         }
-        // Ctrl+K or / to focus search
         if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && !e.target.closest('input, textarea'))) {
             e.preventDefault();
             document.getElementById('searchInput').focus();
@@ -924,8 +940,6 @@ function rgbToHex(rgb) {
     if (!match) return rgb;
     return '#' + match.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
 }
-
-// rgbToHex is used by getSelectedColor to convert style.backgroundColor values.
 
 // ---- Start ----
 document.addEventListener('DOMContentLoaded', init);

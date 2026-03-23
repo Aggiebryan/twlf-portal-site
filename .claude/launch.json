@@ -4,8 +4,8 @@
     {
       "name": "portal",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "3000"],
-      "port": 3000
+      "runtimeArgs": ["-c", "import http.server, socketserver, os; os.chdir('C:/Users/Aggie/Documents/TWLF_Portal'); handler = http.server.SimpleHTTPRequestHandler; handler.extensions_map['.css'] = 'text/css'; handler.extensions_map['.js'] = 'application/javascript'; httpd = socketserver.TCPServer(('', 3001), handler); httpd.serve_forever()"],
+      "port": 3001
     }
   ]
 }

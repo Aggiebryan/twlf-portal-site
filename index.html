@@ -52,17 +52,64 @@
     </div>
   </header>
 
-  <!-- Main Grid Area -->
-  <main class="main-content">
-    <div class="grid-container" id="gridContainer">
-      <!-- Tiles rendered by JS -->
-    </div>
-  </main>
+  <!-- Main Content Area: Grid + Sidebar Widgets -->
+  <div class="main-wrapper">
+    <main class="main-content">
+      <div class="grid-container" id="gridContainer"></div>
+    </main>
+
+    <!-- Sidebar Widgets (always visible) -->
+    <aside class="sidebar" id="sidebar">
+      <!-- Quick Notes Widget -->
+      <div class="widget-panel" id="notesWidget">
+        <div class="widget-header">
+          <h3><i class="fa-solid fa-sticky-note"></i> Quick Notes</h3>
+          <button class="widget-collapse-btn" data-widget="notesWidget" title="Collapse">
+            <i class="fa-solid fa-chevron-up"></i>
+          </button>
+        </div>
+        <div class="widget-body">
+          <textarea id="notesArea" placeholder="Type your notes here..." rows="6"></textarea>
+          <button class="btn btn-sm btn-primary" id="notesSaveBtn">Save</button>
+        </div>
+      </div>
+
+      <!-- To Do List Widget -->
+      <div class="widget-panel" id="todoWidget">
+        <div class="widget-header">
+          <h3><i class="fa-solid fa-list-check"></i> To Do List</h3>
+          <button class="widget-collapse-btn" data-widget="todoWidget" title="Collapse">
+            <i class="fa-solid fa-chevron-up"></i>
+          </button>
+        </div>
+        <div class="widget-body">
+          <div class="todo-input-row">
+            <input type="text" id="todoInput" placeholder="Add a task...">
+            <button class="btn btn-sm btn-primary" id="todoAddBtn">Add</button>
+          </div>
+          <ul class="todo-list" id="todoList"></ul>
+        </div>
+      </div>
+
+      <!-- Clio Grow Training Widget -->
+      <div class="widget-panel" id="clioWidget">
+        <div class="widget-header">
+          <h3><i class="fa-solid fa-play-circle"></i> Clio Grow Training</h3>
+          <button class="widget-collapse-btn" data-widget="clioWidget" title="Collapse">
+            <i class="fa-solid fa-chevron-up"></i>
+          </button>
+        </div>
+        <div class="widget-body">
+          <a href="https://www.loom.com/share/5234da14ff9a430ea7812dab55027ed2?sid=2f0ea8fb-1d16-434f-be50-c3c674b1bd0a" target="_blank" class="widget-link">
+            <i class="fa-solid fa-external-link-alt"></i> Open Clio Grow Training Video
+          </a>
+        </div>
+      </div>
+    </aside>
+  </div>
 
   <!-- Category Tabs (Marker Bar) -->
-  <nav class="marker-bar" id="markerBar">
-    <!-- Markers rendered by JS -->
-  </nav>
+  <nav class="marker-bar" id="markerBar"></nav>
 
   <!-- Add/Edit Tile Modal -->
   <div class="modal-overlay" id="tileModal">
@@ -119,6 +166,11 @@
           </label>
         </div>
         <div class="form-group">
+          <label>
+            <input type="checkbox" id="showSidebar" checked> Show Sidebar Widgets
+          </label>
+        </div>
+        <div class="form-group">
           <label>Add New Category</label>
           <div class="inline-form">
             <input type="text" id="newCategoryName" placeholder="Category name">
@@ -151,39 +203,6 @@
     <div class="context-item" data-action="duplicate"><i class="fa-solid fa-clone"></i> Duplicate</div>
     <div class="context-item context-divider"></div>
     <div class="context-item context-danger" data-action="delete"><i class="fa-solid fa-trash"></i> Delete</div>
-  </div>
-
-  <!-- Notes Widget Modal -->
-  <div class="modal-overlay" id="notesModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Quick Notes</h3>
-        <button class="modal-close" id="notesClose">&times;</button>
-      </div>
-      <div class="modal-body">
-        <textarea id="notesArea" rows="12" placeholder="Type your notes here..."></textarea>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="notesSave">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Todo Widget Modal -->
-  <div class="modal-overlay" id="todoModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>To Do List</h3>
-        <button class="modal-close" id="todoClose">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="todo-input-row">
-          <input type="text" id="todoInput" placeholder="Add a task...">
-          <button class="btn btn-primary" id="todoAddBtn">Add</button>
-        </div>
-        <ul class="todo-list" id="todoList"></ul>
-      </div>
-    </div>
   </div>
 
   <script src="app.js"></script>
