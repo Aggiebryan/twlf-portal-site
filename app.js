@@ -424,8 +424,8 @@ function closeSidebar() {
 }
 
 // ---- Compute category card width ----
-function getCatWidth(cols) {
-    const cellSize = state.settings.tileSize || 100;
+function getCatWidth(cols, catTileSize) {
+    const cellSize = catTileSize || state.settings.tileSize || 100;
     const gap = Math.max(3, Math.round(cellSize * 0.06));
     // width = cols * cell + (cols-1) * gap + padding(20) + border(2)
     return cols * cellSize + (cols - 1) * gap + 22;
@@ -447,12 +447,19 @@ function renderGrid() {
         const section = document.createElement('div');
         section.className = 'category-section';
         section.dataset.catId = cat.id;
-        section.style.width = getCatWidth(cols) + 'px';
+        section.style.width = getCatWidth(cols, cat.tileSize) + 'px';
         section.draggable = state.editMode;
+
+        // Apply per-category styles
+        if (cat.bgColor) {
+            const opacity = cat.bgOpacity != null ? cat.bgOpacity : 1;
+            section.style.background = hexToRgba(cat.bgColor, opacity);
+        }
 
         // Header
         const hdr = document.createElement('div');
         hdr.className = 'category-header';
+        if (cat.headerColor) hdr.style.background = cat.headerColor;
         hdr.innerHTML = `
             <div class="cat-color-bar" style="background:${cat.color}"></div>
             <h2>${esc(cat.name)}</h2>
@@ -462,8 +469,15 @@ function renderGrid() {
                 <span class="cat-size-label">${cols} col</span>
                 <button title="Add tile" onclick="openAddModal('${cat.id}')"><i class="fa-solid fa-plus"></i></button>
             </div>
+            <button class="cat-menu-btn" title="Category settings"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         `;
         section.appendChild(hdr);
+
+        // Three-dot menu
+        hdr.querySelector('.cat-menu-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            openCatSettings(cat, hdr.querySelector('.cat-menu-btn'));
+        });
 
         // Resize buttons
         hdr.querySelector('.cat-wider').addEventListener('click', e => {
@@ -482,6 +496,12 @@ function renderGrid() {
         grid.className = 'tile-grid';
         grid.dataset.category = cat.id;
         grid.style.setProperty('--cat-cols', cols);
+        // Per-category tile size
+        if (cat.tileSize) {
+            grid.style.setProperty('--cell', cat.tileSize + 'px');
+            grid.style.setProperty('--gap', Math.max(3, Math.round(cat.tileSize * 0.06)) + 'px');
+            grid.style.setProperty('--radius', Math.max(6, Math.round(cat.tileSize * 0.14)) + 'px');
+        }
 
         tiles.forEach(t => grid.appendChild(createTile(t)));
 
@@ -1212,7 +1232,7 @@ function setupEventListeners() {
             const catId = sec.dataset.catId;
             const dash = getActiveDashboard();
             const cat = dash.categories.find(c => c.id === catId);
-            if (cat) sec.style.width = getCatWidth(cat.columns || 6) + 'px';
+            if (cat) sec.style.width = getCatWidth(cat.columns || 6, cat.tileSize) + 'px';
         });
         saveState();
     });
@@ -1422,6 +1442,189 @@ function setupEventListeners() {
             document.getElementById('searchInput').focus();
         }
     });
+}
+
+// ---- Utilities ----
+function hexToRgba(hex, a) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    return `rgba(${r},${g},${b},${a})`;
+}
+
+// ---- Category Settings Popover ----
+let activeCatPopover = null;
+
+function closeCatSettings() {
+    if (activeCatPopover) {
+        activeCatPopover.remove();
+        activeCatPopover = null;
+    }
+}
+
+function openCatSettings(cat, anchorEl) {
+    closeCatSettings();
+
+    const popover = document.createElement('div');
+    popover.className = 'cat-settings-popover active';
+
+    const cols = cat.columns || 6;
+    const bgColor = cat.bgColor || (document.documentElement.getAttribute('data-theme') === 'light' ? '#ffffff' : '#162231');
+    const bgOpacity = cat.bgOpacity != null ? cat.bgOpacity : 1;
+    const headerColor = cat.headerColor || '';
+    const tileSize = cat.tileSize || state.settings.tileSize || 100;
+
+    popover.innerHTML = `
+        <div class="cat-settings-header">
+            <h4>${esc(cat.name)}</h4>
+            <button class="cat-settings-close">&times;</button>
+        </div>
+        <div class="cat-settings-body">
+            <div class="cat-settings-group">
+                <label>Category Name</label>
+                <input type="text" class="cs-name" value="${esc(cat.name)}">
+            </div>
+            <div class="cat-settings-group">
+                <label>Columns Wide</label>
+                <div class="cat-settings-row">
+                    <input type="range" class="cs-cols" min="1" max="12" value="${cols}" step="1">
+                    <span class="cat-settings-range-val cs-cols-val">${cols}</span>
+                </div>
+            </div>
+            <div class="cat-settings-group">
+                <label>Card Background Color</label>
+                <div class="cat-settings-row">
+                    <input type="color" class="cs-bg-color" value="${bgColor}">
+                    <input type="text" class="cs-bg-color-text" value="${bgColor}" style="flex:1">
+                </div>
+            </div>
+            <div class="cat-settings-group">
+                <label>Card Background Opacity</label>
+                <div class="cat-settings-row">
+                    <input type="range" class="cs-opacity" min="0" max="100" value="${Math.round(bgOpacity * 100)}" step="5">
+                    <span class="cat-settings-range-val cs-opacity-val">${Math.round(bgOpacity * 100)}%</span>
+                </div>
+            </div>
+            <div class="cat-settings-group">
+                <label>Header Bar Color</label>
+                <div class="cat-settings-row">
+                    <input type="color" class="cs-header-color" value="${headerColor || cat.color}">
+                    <input type="text" class="cs-header-color-text" value="${headerColor || cat.color}" style="flex:1">
+                </div>
+            </div>
+            <div class="cat-settings-group">
+                <label>Accent / Marker Color</label>
+                <div class="cat-settings-row">
+                    <input type="color" class="cs-accent-color" value="${cat.color}">
+                    <input type="text" class="cs-accent-text" value="${cat.color}" style="flex:1">
+                </div>
+            </div>
+            <div class="cat-settings-group">
+                <label>Tile Size (this category)</label>
+                <div class="cat-settings-row">
+                    <input type="range" class="cs-tile-size" min="50" max="160" value="${tileSize}" step="2">
+                    <span class="cat-settings-range-val cs-tile-size-val">${tileSize}px</span>
+                </div>
+            </div>
+        </div>
+        <div class="cat-settings-footer">
+            <button class="btn btn-danger btn-sm cs-delete-cat" style="margin-right:auto"><i class="fa-solid fa-trash"></i> Delete</button>
+            <button class="btn btn-secondary cs-cancel">Cancel</button>
+            <button class="btn btn-primary cs-save">Save</button>
+        </div>
+    `;
+
+    // Position near the anchor
+    document.body.appendChild(popover);
+    const rect = anchorEl.getBoundingClientRect();
+    let left = rect.right + 8;
+    let top = rect.top;
+    // Keep in viewport
+    if (left + 290 > window.innerWidth) left = rect.left - 290;
+    if (top + popover.offsetHeight > window.innerHeight) top = window.innerHeight - popover.offsetHeight - 10;
+    if (top < 60) top = 60;
+    popover.style.left = left + 'px';
+    popover.style.top = top + 'px';
+    popover.style.position = 'fixed';
+
+    activeCatPopover = popover;
+
+    // Live preview: columns slider
+    const colsSlider = popover.querySelector('.cs-cols');
+    const colsVal = popover.querySelector('.cs-cols-val');
+    colsSlider.addEventListener('input', () => { colsVal.textContent = colsSlider.value; });
+
+    // Live preview: opacity slider
+    const opacitySlider = popover.querySelector('.cs-opacity');
+    const opacityVal = popover.querySelector('.cs-opacity-val');
+    opacitySlider.addEventListener('input', () => { opacityVal.textContent = opacitySlider.value + '%'; });
+
+    // Live preview: tile size slider
+    const tileSizeSlider = popover.querySelector('.cs-tile-size');
+    const tileSizeVal = popover.querySelector('.cs-tile-size-val');
+    tileSizeSlider.addEventListener('input', () => { tileSizeVal.textContent = tileSizeSlider.value + 'px'; });
+
+    // Sync color inputs
+    const bgColorInput = popover.querySelector('.cs-bg-color');
+    const bgColorText = popover.querySelector('.cs-bg-color-text');
+    bgColorInput.addEventListener('input', () => { bgColorText.value = bgColorInput.value; });
+    bgColorText.addEventListener('input', () => { if (/^#[0-9A-Fa-f]{6}$/.test(bgColorText.value)) bgColorInput.value = bgColorText.value; });
+
+    const hdrColorInput = popover.querySelector('.cs-header-color');
+    const hdrColorText = popover.querySelector('.cs-header-color-text');
+    hdrColorInput.addEventListener('input', () => { hdrColorText.value = hdrColorInput.value; });
+    hdrColorText.addEventListener('input', () => { if (/^#[0-9A-Fa-f]{6}$/.test(hdrColorText.value)) hdrColorInput.value = hdrColorText.value; });
+
+    const accentInput = popover.querySelector('.cs-accent-color');
+    const accentText = popover.querySelector('.cs-accent-text');
+    accentInput.addEventListener('input', () => { accentText.value = accentInput.value; });
+    accentText.addEventListener('input', () => { if (/^#[0-9A-Fa-f]{6}$/.test(accentText.value)) accentInput.value = accentText.value; });
+
+    // Close
+    popover.querySelector('.cat-settings-close').addEventListener('click', closeCatSettings);
+    popover.querySelector('.cs-cancel').addEventListener('click', closeCatSettings);
+
+    // Delete
+    popover.querySelector('.cs-delete-cat').addEventListener('click', () => {
+        if (!confirm(`Delete category "${cat.name}"? All tiles in this category will be removed.`)) return;
+        const dash = getActiveDashboard();
+        dash.categories = dash.categories.filter(c => c.id !== cat.id);
+        dash.tiles = dash.tiles.filter(t => t.category !== cat.id);
+        closeCatSettings();
+        saveState(); renderGrid();
+    });
+
+    // Save
+    popover.querySelector('.cs-save').addEventListener('click', () => {
+        const dash = getActiveDashboard();
+        const c = dash.categories.find(x => x.id === cat.id);
+        if (!c) { closeCatSettings(); return; }
+
+        const newName = popover.querySelector('.cs-name').value.trim();
+        if (newName) c.name = newName;
+        c.columns = parseInt(colsSlider.value) || 6;
+        c.bgColor = bgColorInput.value;
+        c.bgOpacity = parseInt(opacitySlider.value) / 100;
+        c.headerColor = hdrColorInput.value;
+        c.color = accentInput.value;
+        c.tileSize = parseInt(tileSizeSlider.value) || 100;
+
+        closeCatSettings();
+        saveState(); renderGrid();
+    });
+
+    // Close on outside click
+    setTimeout(() => {
+        const handler = e => {
+            if (!popover.contains(e.target) && e.target !== anchorEl) {
+                closeCatSettings();
+                document.removeEventListener('mousedown', handler);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+    }, 50);
 }
 
 // ---- Start ----
