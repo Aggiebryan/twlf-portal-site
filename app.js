@@ -36,7 +36,14 @@ let editingContext = null;
 
 const categoryById = id => categories.find(category => category.id === id);
 const hostname = url => { try { return new URL(url).hostname.replace(/^www\./,''); } catch { return url; } };
-const logo = url => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname(url))}&sz=128`;
+const officialLogoExtensions = {
+  t2:'png',t3:'png',t4:'png',t5:'png',t7:'png',t11:'svg',t12:'png',t16:'png',t18:'png',
+  t19:'png',t20:'png',t21:'png',t22:'png',t23:'png',t32:'png',t35:'jpg',t36:'png',t39:'png',t40:'png',t42:'png',
+  t43:'png',t45:'png',t48:'png',t56:'png',t57:'svg',t58:'png',t59:'png',t60:'png',
+  t61:'png',t62:'jpg',t64:'png',t72:'png',t73:'png',t74:'png',t75:'png',
+  t76:'jpg',t77:'png',t78:'png',t80:'png',t81:'jpg',t82:'png'
+};
+const officialLogo = id => `logos/${id}.${officialLogoExtensions[id] || 'ico'}`;
 const escapeHtml = value => { const node=document.createElement('div'); node.textContent=value; return node.innerHTML; };
 
 function save() { localStorage.setItem(storageKey, JSON.stringify(links)); document.querySelector('#reset').hidden = false; }
@@ -52,7 +59,7 @@ function linkCard(link, index, context) {
     <button class="remove" data-remove="${link.id}" data-remove-context="${context}" aria-label="Remove ${safeName}" title="${context==='most-used'?'Remove from Most Used':'Remove link'}">×</button>
     <button class="edit" data-edit="${link.id}" data-edit-context="${context}" aria-label="Edit ${safeName}" title="Edit link and logo">✎</button>
     <a href="${safeUrl}" target="_blank" rel="noreferrer">
-      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || logo(link.url))}" alt="" onerror="this.style.display='none'"></span>
+      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.display='none'"></span>
       <span class="link-copy"><strong>${safeName}</strong><small class="link-address">${safeHost}</small><small class="description">${description}</small></span><span class="open">↗</span>
     </a></article>`;
 }
