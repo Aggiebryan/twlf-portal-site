@@ -41,6 +41,8 @@
         <label>DESCRIPTION <span class="optional">OPTIONAL</span><textarea name="description" placeholder="What this resource is used for" maxlength="160"></textarea></label>
         <label>CATEGORY<select name="category" id="categorySelect"></select></label>
         <label>CARD SIZE<select name="size"><option value="standard">Medium</option><option value="large">Large</option><option value="small">Small</option></select></label>
+        <label class="check-label"><input type="checkbox" name="mostUsed"> ALSO SHOW IN MOST USED</label>
+        <label id="mostUsedSizeLabel">MOST USED CARD SIZE<select name="mostUsedSize"><option value="standard">Medium</option><option value="large">Large</option><option value="small">Small</option></select></label>
         <div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save" id="saveLink">Add link</button></div>
       </form>
     </section>
@@ -51,6 +53,7 @@
       <button class="close" id="settingsClose" aria-label="Close">×</button>
       <h2 id="settingsTitle">Portal settings</h2><p>Adjust how much fits across your workspace.</p>
       <label class="range-label">DISPLAY COLUMNS <output id="columnCount">2</output><input id="columns" type="range" min="1" max="4" step="1" value="2"></label>
+      <form id="categoryForm" class="category-form"><strong>Add a category</strong><div><input name="name" placeholder="Category name" required maxlength="40"><input name="color" type="color" value="#287b67" aria-label="Category color"><button class="save">Add</button></div></form>
       <div class="account-panel"><div><strong>Your portal</strong><p id="accountStatus">Saved on this device</p></div><button class="account-button" id="settingsAccount">Sign in</button></div>
       <p class="sync-note">Account sync will keep links, sizes, logos, and layout consistent on every device.</p>
     </section>
