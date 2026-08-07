@@ -11,6 +11,7 @@ const microsoftAuth = new msal.PublicClientApplication({
     storeAuthStateInCookie: false,
   },
 });
+const portalGraphScopes = ['User.Read', 'Calendars.Read', 'Mail.ReadBasic'];
 
 let signedInAccount = null;
 
@@ -25,7 +26,7 @@ window.twlfAuth = {
   getAccount: () => signedInAccount,
   signIn: async () => {
     await microsoftAuth.loginRedirect({
-      scopes: ['User.Read'],
+      scopes: portalGraphScopes,
       prompt: 'select_account',
     });
   },
@@ -40,7 +41,8 @@ window.twlfAuth = {
       return await microsoftAuth.acquireTokenSilent({ account: signedInAccount, scopes });
     } catch (error) {
       if (error instanceof msal.InteractionRequiredAuthError) {
-        return microsoftAuth.acquireTokenPopup({ account: signedInAccount, scopes });
+        await microsoftAuth.acquireTokenRedirect({ account: signedInAccount, scopes });
+        return null;
       }
       throw error;
     }
