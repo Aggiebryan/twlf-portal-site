@@ -14,10 +14,9 @@
     <a class="brand" href="#"><span class="brandmark">TW</span><span><b>TWLF</b> Portal</span></a>
     <label class="search"><span>⌕</span><input id="search" placeholder="Search portal…" autocomplete="off"><kbd>/</kbd></label>
     <div class="actions">
-      <div class="size-control" aria-label="Card size">
-        <button data-size="small" title="Small cards">S</button><button data-size="standard" title="Standard cards">M</button><button data-size="large" title="Large cards">L</button>
-      </div>
+      <button class="icon-button" id="settings" aria-label="Open settings" title="Settings">⚙</button>
       <button class="icon-button" id="theme" aria-label="Switch color theme"><span id="themeIcon">☾</span></button>
+      <button class="account-button" id="account">Sign in</button>
       <button class="add-button" data-add><span>＋</span> Add link</button>
     </div>
   </header>
@@ -39,9 +38,21 @@
         <label>NAME<input name="name" placeholder="e.g. Benefits Portal" required maxlength="60"></label>
         <label>WEB ADDRESS<input name="url" placeholder="https://portal.example.com" required inputmode="url"></label>
         <label>CUSTOM LOGO ADDRESS <span class="optional">OPTIONAL</span><input name="logo" placeholder="https://example.com/logo.png" inputmode="url"></label>
+        <label>DESCRIPTION <span class="optional">OPTIONAL</span><textarea name="description" placeholder="What this resource is used for" maxlength="160"></textarea></label>
         <label>CATEGORY<select name="category" id="categorySelect"></select></label>
+        <label>CARD SIZE<select name="size"><option value="standard">Medium</option><option value="large">Large</option><option value="small">Small</option></select></label>
         <div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save" id="saveLink">Add link</button></div>
       </form>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="settingsBackdrop" hidden>
+    <section class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <button class="close" id="settingsClose" aria-label="Close">×</button>
+      <h2 id="settingsTitle">Portal settings</h2><p>Adjust how much fits across your workspace.</p>
+      <label class="range-label">DISPLAY COLUMNS <output id="columnCount">2</output><input id="columns" type="range" min="1" max="4" step="1" value="2"></label>
+      <div class="account-panel"><div><strong>Your portal</strong><p id="accountStatus">Saved on this device</p></div><button class="account-button" id="settingsAccount">Sign in</button></div>
+      <p class="sync-note">Account sync will keep links, sizes, logos, and layout consistent on every device.</p>
     </section>
   </div>
   <script src="app.js" defer></script>

@@ -1,64 +1,8 @@
-.size-control { display:flex; height:40px; padding:3px; border:1px solid var(--line); background:var(--panel); border-radius:6px; }
-.size-control button { width:30px; border:0; border-radius:4px; background:transparent; color:var(--muted); font-size:10px; font-weight:800; }
-.size-control button:hover { color:var(--ink); background:var(--hover); }
-.size-control button.active { background:var(--ink); color:var(--surface); }
-
-.dashboard-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; align-items:start; }
-.dashboard-grid .category-panel, .single-category .category-panel { margin:0; }
-.category-panel { transition:opacity .15s, transform .15s, box-shadow .15s; }
-.category-panel[draggable=true] > header { cursor:grab; }
-.category-panel[draggable=true] > header:active { cursor:grabbing; }
-.category-panel.dragging { opacity:.38; transform:scale(.985); }
-.category-panel.drag-target { box-shadow:0 0 0 2px var(--category),var(--shadow); }
-.drag-handle { color:var(--muted); font-size:16px; line-height:1; user-select:none; }
-.single-category .drag-handle { display:none; }
-
-.dashboard-grid .link-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
-.single-category .link-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
-.link-card > a { min-height:104px; padding:14px 12px; gap:11px; }
-.logo { width:43px; height:43px; }
-.logo img { width:31px; height:31px; }
-.link-copy strong { font-size:12px; }
-.link-copy small { font-size:9px; }
-.remove, .edit { position:absolute; z-index:3; top:4px; width:22px; height:22px; border:0; background:transparent; color:transparent; border-radius:50%; line-height:1; }
-.remove { right:4px; }
-.edit { right:27px; }
-.link-card:hover .remove, .link-card:hover .edit, .remove:focus, .edit:focus { color:var(--muted); background:var(--hover); }
-.remove:hover { color:#c13e36!important; }
-.edit:hover { color:var(--accent)!important; }
-.optional { font-size:8px; font-weight:500; letter-spacing:0; color:var(--muted); margin-left:5px; }
-
-body[data-card-size=large] .dashboard-grid { grid-template-columns:1fr; }
-body[data-card-size=large] .dashboard-grid .link-grid,
-body[data-card-size=large] .single-category .link-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
-body[data-card-size=large] .link-card > a { min-height:175px; flex-direction:column; align-items:flex-start; justify-content:flex-end; padding:20px; }
-body[data-card-size=large] .logo { width:58px; height:58px; margin-bottom:auto; }
-body[data-card-size=large] .logo img { width:42px; height:42px; }
-body[data-card-size=large] .link-copy strong { font-size:16px; }
-body[data-card-size=large] .link-copy small { font-size:10px; }
-body[data-card-size=large] .open { position:absolute; right:18px; bottom:19px; }
-
-body[data-card-size=small] .dashboard-grid .link-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
-body[data-card-size=small] .single-category .link-grid { grid-template-columns:repeat(8,minmax(0,1fr)); }
-body[data-card-size=small] .link-card > a { min-height:61px; padding:9px; gap:8px; }
-body[data-card-size=small] .logo { width:31px; height:31px; }
-body[data-card-size=small] .logo img { width:22px; height:22px; }
-body[data-card-size=small] .link-copy small, body[data-card-size=small] .open { display:none; }
-body[data-card-size=small] .link-copy strong { font-size:10px; }
-
-@media(max-width:1250px) {
-  .dashboard-grid { grid-template-columns:1fr; }
-  .single-category .link-grid, .dashboard-grid .link-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
-}
-@media(max-width:800px) {
-  .size-control { order:-1; }
-  .dashboard-grid .link-grid, .single-category .link-grid,
-  body[data-card-size=large] .dashboard-grid .link-grid, body[data-card-size=large] .single-category .link-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  body[data-card-size=small] .dashboard-grid .link-grid, body[data-card-size=small] .single-category .link-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
-}
-@media(max-width:520px) {
-  .size-control { display:none; }
-  .dashboard-grid .link-grid, .single-category .link-grid,
-  body[data-card-size=large] .dashboard-grid .link-grid, body[data-card-size=large] .single-category .link-grid,
-  body[data-card-size=small] .dashboard-grid .link-grid, body[data-card-size=small] .single-category .link-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-}
+.account-button{height:40px;padding:0 13px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font-size:11px;font-weight:800}
+.workspace{max-width:none}.dashboard-grid{column-count:var(--display-columns,2);column-gap:16px}.dashboard-grid .category-panel{display:inline-block;width:100%;margin:0 0 16px;break-inside:avoid}.single-category .category-panel{margin:0}.category-panel{transition:opacity .15s,transform .15s,box-shadow .15s}.category-panel>header[draggable=true]{cursor:grab}.category-panel>header[draggable=true]:active{cursor:grabbing}.category-panel.dragging{opacity:.35}.category-panel.drag-target{box-shadow:0 0 0 2px var(--category),var(--shadow)}.drag-handle{color:var(--muted);font-size:16px;line-height:1;user-select:none}.single-category .drag-handle{display:none}
+.link-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-flow:dense;gap:9px}.single-category .link-grid{grid-template-columns:repeat(8,minmax(0,1fr))}.link-card{min-width:0}.link-card>a{height:100%;min-height:112px;padding:13px;align-items:flex-start}.link-copy{align-self:center}.link-copy strong{font-size:12px}.link-copy small{font-size:9px}.description{white-space:normal!important;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.logo{width:42px;height:42px}.logo img{width:30px;height:30px}
+.link-card.size-large{grid-column:span 2;grid-row:span 2}.link-card.size-large>a{min-height:233px;flex-direction:column}.link-card.size-large .logo{width:62px;height:62px}.link-card.size-large .logo img{width:46px;height:46px}.link-card.size-large .link-copy{margin-top:auto;align-self:stretch}.link-card.size-large .link-copy strong{font-size:17px}.link-card.size-large .link-copy small{font-size:10px}.link-card.size-small>a{min-height:72px;padding:10px}.link-card.size-small .logo{width:34px;height:34px}.link-card.size-small .logo img{width:24px;height:24px}.link-card.size-small .link-address,.link-card.size-small .description,.link-card.size-small .open{display:none}.link-card.size-small .link-copy strong{font-size:11px}
+.remove,.edit{position:absolute;z-index:3;top:4px;width:22px;height:22px;border:0;background:transparent;color:transparent;border-radius:50%;line-height:1}.remove{right:4px}.edit{right:28px}.link-card:hover .remove,.link-card:hover .edit,.remove:focus,.edit:focus{color:var(--muted);background:var(--hover)}.remove:hover{color:#c13e36!important}.edit:hover{color:var(--accent)!important}.optional{font-size:8px;font-weight:500;letter-spacing:0;color:var(--muted);margin-left:5px}.modal textarea{min-height:76px;resize:vertical;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink);padding:11px 12px;font:inherit;font-size:12px}.range-label{display:grid!important;grid-template-columns:1fr auto;gap:10px!important}.range-label input{grid-column:1/-1;padding:0}.range-label output{font-size:16px;color:var(--ink)}.account-panel{display:flex;align-items:center;justify-content:space-between;padding:15px;border:1px solid var(--line);border-radius:7px}.account-panel strong{font-size:13px}.account-panel p,.sync-note{margin:3px 0 0!important;font-size:10px!important;color:var(--muted)}.sync-note{margin-top:12px!important}
+@media(max-width:1250px){.dashboard-grid{column-count:2}.single-category .link-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:800px){.dashboard-grid{column-count:1}.link-grid,.single-category .link-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.account-button{display:none}}
+@media(max-width:520px){.link-grid,.single-category .link-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.link-card.size-large{grid-column:span 2}.link-card.size-large>a{min-height:190px}}

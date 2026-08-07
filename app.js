@@ -22,7 +22,7 @@ const storageKey = 'twlf-firm-hub-links-v3';
 let links = JSON.parse(localStorage.getItem(storageKey) || 'null') || seed;
 let active = 'all';
 let query = '';
-let cardSize = localStorage.getItem('twlf-card-size') || 'standard';
+let displayColumns = Number(localStorage.getItem('twlf-display-columns') || 2);
 let categoryOrder = JSON.parse(localStorage.getItem('twlf-category-order') || 'null') || categories.map(category => category.id);
 let editingId = null;
 
@@ -35,12 +35,14 @@ function save() { localStorage.setItem(storageKey, JSON.stringify(links)); docum
 
 function linkCard(link, index) {
   const safeName=escapeHtml(link.name), safeUrl=escapeHtml(link.url), safeHost=escapeHtml(hostname(link.url));
-  return `<article class="link-card" style="--accent:${link.color};--delay:${Math.min(index,16)*18}ms">
+  const size=['small','standard','large'].includes(link.size)?link.size:'standard';
+  const description=escapeHtml(link.description || `${categoryById(link.category)?.name || 'Portal'} resource`);
+  return `<article class="link-card size-${size}" data-link="${link.id}" style="--accent:${link.color};--delay:${Math.min(index,16)*18}ms">
     <button class="remove" data-remove="${link.id}" aria-label="Remove ${safeName}" title="Remove link">×</button>
     <button class="edit" data-edit="${link.id}" aria-label="Edit ${safeName}" title="Edit link and logo">✎</button>
     <a href="${safeUrl}" target="_blank" rel="noreferrer">
       <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || logo(link.url))}" alt="" onerror="this.style.display='none'"></span>
-      <span class="link-copy"><strong>${safeName}</strong><small>${safeHost}</small></span><span class="open">↗</span>
+      <span class="link-copy"><strong>${safeName}</strong><small class="link-address">${safeHost}</small><small class="description">${description}</small></span><span class="open">↗</span>
     </a></article>`;
 }
 
@@ -49,8 +51,7 @@ function matching(categoryId) {
 }
 
 function render() {
-  document.body.dataset.cardSize = cardSize;
-  document.querySelectorAll('[data-size]').forEach(button => button.classList.toggle('active', button.dataset.size === cardSize));
+  document.documentElement.style.setProperty('--display-columns',displayColumns);
   const nav = [{id:'all',name:'All'},...categories];
   document.querySelector('#categoryNav').innerHTML = nav.map(item => `<button class="${active===item.id?'active':''}" data-category="${item.id}">${item.name}<span>${item.id==='all'?links.length:links.filter(link=>link.category===item.id).length}</span></button>`).join('');
   const orderedCategories = categoryOrder.map(id => categoryById(id)).filter(Boolean);
@@ -59,8 +60,8 @@ function render() {
   const count = sections.reduce((sum,section) => sum + section.items.length,0);
   document.querySelector('#pageTitle').textContent = active === 'all' ? 'All resources' : categoryById(active)?.name || '';
   document.querySelector('#pageCount').textContent = `${count} ${count===1?'link':'links'}`;
-  document.querySelector('#content').className = active === 'all' ? 'dashboard-grid' : 'single-category';
-  document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel" data-panel="${category.id}" draggable="${active==='all'}" style="--category:${category.color}"><header><span class="drag-handle" title="Drag to move category">⠿</span><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map(linkCard).join('')}</div></section>`).join('');
+  document.querySelector('#content').className = active === 'all' ? 'dashboard-grid masonry-board' : 'single-category';
+  document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel" data-panel="${category.id}" style="--category:${category.color}"><header draggable="${active==='all'}"><span class="drag-handle" title="Drag to move category">⠿</span><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map(linkCard).join('')}</div></section>`).join('');
   document.querySelector('#empty').hidden = count > 0;
 }
 
@@ -72,24 +73,31 @@ document.addEventListener('click', event => {
   if (removeButton) { event.preventDefault(); const link=links.find(item=>String(item.id)===removeButton.dataset.remove); if(link && window.confirm(`Remove “${link.name}” from the portal?`)){links=links.filter(item=>String(item.id)!==removeButton.dataset.remove);save();render()} }
   const editButton = event.target.closest('[data-edit]');
   if (editButton) { event.preventDefault(); openModal(links.find(link=>String(link.id)===editButton.dataset.edit)); }
-  const sizeButton = event.target.closest('[data-size]');
-  if (sizeButton) { cardSize=sizeButton.dataset.size;localStorage.setItem('twlf-card-size',cardSize);render(); }
 });
 
 document.querySelector('#search').addEventListener('input', event => { query=event.target.value.trim().toLowerCase(); render(); });
 document.addEventListener('keydown', event => { if(event.key==='/' && document.activeElement.tagName!=='INPUT'){event.preventDefault();document.querySelector('#search').focus()} });
 
-function openModal(link=null){editingId=link?.id||null;const form=document.querySelector('#form');form.reset();document.querySelector('#modalTitle').textContent=link?'Edit portal link':'Add a portal link';document.querySelector('#modalIntro').textContent=link?'Change its name, destination, category, or logo.':'Add a destination to this browser’s TWLF portal.';document.querySelector('#saveLink').textContent=link?'Save changes':'Add link';if(link){form.elements.name.value=link.name;form.elements.url.value=link.url;form.elements.logo.value=link.logo||'';form.elements.category.value=link.category}document.querySelector('#backdrop').hidden=false}
+function openModal(link=null){editingId=link?.id||null;const form=document.querySelector('#form');form.reset();document.querySelector('#modalTitle').textContent=link?'Edit portal link':'Add a portal link';document.querySelector('#modalIntro').textContent=link?'Change its content, size, category, or logo.':'Add a destination to this browser’s TWLF portal.';document.querySelector('#saveLink').textContent=link?'Save changes':'Add link';if(link){form.elements.name.value=link.name;form.elements.url.value=link.url;form.elements.logo.value=link.logo||'';form.elements.description.value=link.description||'';form.elements.category.value=link.category;form.elements.size.value=link.size||'standard'}document.querySelector('#backdrop').hidden=false}
 const closeModal=()=>{document.querySelector('#backdrop').hidden=true;editingId=null};
 document.querySelector('#close').onclick=closeModal; document.querySelector('#cancel').onclick=closeModal;
 document.querySelector('#backdrop').addEventListener('click',event=>{if(event.target.id==='backdrop')closeModal()});
 document.querySelector('#categorySelect').innerHTML=categories.map(category=>`<option value="${category.id}">${category.name}</option>`).join('');
-document.querySelector('#form').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;const category=categoryById(data.category);const entry={name:data.name.trim(),url:data.url,logo:data.logo.trim(),category:data.category,color:category.color};const wasEditing=Boolean(editingId);if(wasEditing){links=links.map(link=>String(link.id)===String(editingId)?{...link,...entry}:link)}else{links.push({id:`custom-${Date.now()}`,...entry})}save();event.target.reset();closeModal();document.querySelector('#notice').innerHTML=`<div class="notice">${wasEditing?'Link updated':'Link added to your portal'}.<button aria-label="Dismiss">×</button></div>`;render()});
+document.querySelector('#form').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;const category=categoryById(data.category);const entry={name:data.name.trim(),url:data.url,logo:data.logo.trim(),description:data.description.trim(),size:data.size,category:data.category,color:category.color};const wasEditing=Boolean(editingId);if(wasEditing){links=links.map(link=>String(link.id)===String(editingId)?{...link,...entry}:link)}else{links.push({id:`custom-${Date.now()}`,...entry})}save();event.target.reset();closeModal();document.querySelector('#notice').innerHTML=`<div class="notice">${wasEditing?'Link updated':'Link added to your portal'}.<button aria-label="Dismiss">×</button></div>`;render()});
 
 document.querySelector('#theme').addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('twlf-theme',next);document.querySelector('#themeIcon').textContent=next==='dark'?'☀':'☾'});
 const theme=localStorage.getItem('twlf-theme')||'light';document.documentElement.dataset.theme=theme;document.querySelector('#themeIcon').textContent=theme==='dark'?'☀':'☾';
 document.querySelector('#reset').addEventListener('click',()=>{links=seed.map(link=>({...link}));localStorage.removeItem(storageKey);document.querySelector('#reset').hidden=true;render()});
 document.querySelector('#reset').hidden=!localStorage.getItem(storageKey);render();
+
+const settingsBackdrop=document.querySelector('#settingsBackdrop');
+const columnsInput=document.querySelector('#columns');
+columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
+document.querySelector('#settings').addEventListener('click',()=>{settingsBackdrop.hidden=false});
+document.querySelector('#settingsClose').addEventListener('click',()=>{settingsBackdrop.hidden=true});
+settingsBackdrop.addEventListener('click',event=>{if(event.target===settingsBackdrop)settingsBackdrop.hidden=true});
+columnsInput.addEventListener('input',event=>{displayColumns=Number(event.target.value);document.querySelector('#columnCount').value=displayColumns;localStorage.setItem('twlf-display-columns',displayColumns);render()});
+document.querySelectorAll('#account,#settingsAccount').forEach(button=>button.addEventListener('click',()=>{document.querySelector('#notice').innerHTML='<div class="notice">Secure account sync is ready to connect when the portal’s identity service is configured.<button aria-label="Dismiss">×</button></div>';settingsBackdrop.hidden=true}));
 
 let draggedPanel=null;
 document.querySelector('#content').addEventListener('dragstart',event=>{const panel=event.target.closest('[data-panel]');if(!panel||active!=='all')return;draggedPanel=panel.dataset.panel;panel.classList.add('dragging');event.dataTransfer.effectAllowed='move'});
