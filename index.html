@@ -24,10 +24,20 @@
   <nav class="category-nav" id="categoryNav" aria-label="Portal categories"></nav>
 
   <main class="workspace">
-    <div class="workspace-head"><div><h1 id="pageTitle">All resources</h1><p id="pageCount"></p></div><button class="text-button" id="reset" hidden>Restore default links</button></div>
-    <div id="notice"></div>
-    <div id="content"></div>
-    <div class="empty" id="empty" hidden><span>⌕</span><h2>No links found</h2><p>Try another search or add a new destination.</p><button class="add-button" data-add>Add link</button></div>
+    <div class="portal-layout">
+      <div class="portal-main">
+        <div class="workspace-head"><div><h1 id="pageTitle">All resources</h1><p id="pageCount"></p></div><button class="text-button" id="reset" hidden>Restore default links</button></div>
+        <div id="notice"></div>
+        <div id="content"></div>
+        <div class="empty" id="empty" hidden><span>⌕</span><h2>No links found</h2><p>Try another search or add a new destination.</p><button class="add-button" data-add>Add link</button></div>
+      </div>
+      <aside class="activity-sidebar" aria-label="Microsoft 365 activity">
+        <div class="activity-head"><div><span class="live-dot"></span><strong>Microsoft 365</strong><small id="activityUpdated">Sign in to connect</small></div><button id="activityRefresh" aria-label="Refresh calendar and email" title="Refresh">↻</button></div>
+        <section class="activity-section"><header><h2>Upcoming</h2><span id="calendarCount"></span></header><div id="calendarList" class="activity-list"><div class="activity-empty">Your upcoming calendar events will appear here.</div></div></section>
+        <section class="activity-section"><header><h2>Recent email</h2><span>10</span></header><div id="mailList" class="activity-list"><div class="activity-empty">Your ten newest messages will appear here.</div></div></section>
+        <button class="activity-signin" id="activitySignIn">Sign in with Microsoft 365</button>
+      </aside>
+    </div>
   </main>
 
   <div class="modal-backdrop" id="backdrop" hidden>
@@ -59,7 +69,8 @@
     </section>
   </div>
   <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js" defer></script>
-  <script src="auth.js?v=20260807.2" defer></script>
-  <script src="app.js?v=20260807.2" defer></script>
+  <script src="auth.js?v=20260807.3" defer></script>
+  <script src="app.js?v=20260807.3" defer></script>
+  <script src="modules.js?v=20260807.3" defer></script>
 </body>
 </html>
