@@ -24,18 +24,15 @@ window.twlfAuth = {
   ready: authReady,
   getAccount: () => signedInAccount,
   signIn: async () => {
-    const response = await microsoftAuth.loginPopup({
+    await microsoftAuth.loginRedirect({
       scopes: ['User.Read'],
       prompt: 'select_account',
     });
-    signedInAccount = response.account;
-    microsoftAuth.setActiveAccount(signedInAccount);
-    return signedInAccount;
   },
   signOut: async () => {
     const account = signedInAccount;
     signedInAccount = null;
-    await microsoftAuth.logoutPopup({ account, postLogoutRedirectUri: 'https://portal.twlf.dev/' });
+    await microsoftAuth.logoutRedirect({ account, postLogoutRedirectUri: 'https://portal.twlf.dev/' });
   },
   acquireGraphToken: async scopes => {
     if (!signedInAccount) throw new Error('Sign in is required.');
