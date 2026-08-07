@@ -22,6 +22,9 @@ const storageKey = 'twlf-firm-hub-links-v3';
 let links = JSON.parse(localStorage.getItem(storageKey) || 'null') || seed;
 let active = 'all';
 let query = '';
+let cardSize = localStorage.getItem('twlf-card-size') || 'standard';
+let categoryOrder = JSON.parse(localStorage.getItem('twlf-category-order') || 'null') || categories.map(category => category.id);
+let editingId = null;
 
 const categoryById = id => categories.find(category => category.id === id);
 const hostname = url => { try { return new URL(url).hostname.replace(/^www\./,''); } catch { return url; } };
@@ -34,8 +37,9 @@ function linkCard(link, index) {
   const safeName=escapeHtml(link.name), safeUrl=escapeHtml(link.url), safeHost=escapeHtml(hostname(link.url));
   return `<article class="link-card" style="--accent:${link.color};--delay:${Math.min(index,16)*18}ms">
     <button class="remove" data-remove="${link.id}" aria-label="Remove ${safeName}" title="Remove link">×</button>
+    <button class="edit" data-edit="${link.id}" aria-label="Edit ${safeName}" title="Edit link and logo">✎</button>
     <a href="${safeUrl}" target="_blank" rel="noreferrer">
-      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${logo(link.url)}" alt=""></span>
+      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || logo(link.url))}" alt="" onerror="this.style.display='none'"></span>
       <span class="link-copy"><strong>${safeName}</strong><small>${safeHost}</small></span><span class="open">↗</span>
     </a></article>`;
 }
@@ -45,35 +49,50 @@ function matching(categoryId) {
 }
 
 function render() {
+  document.body.dataset.cardSize = cardSize;
+  document.querySelectorAll('[data-size]').forEach(button => button.classList.toggle('active', button.dataset.size === cardSize));
   const nav = [{id:'all',name:'All'},...categories];
   document.querySelector('#categoryNav').innerHTML = nav.map(item => `<button class="${active===item.id?'active':''}" data-category="${item.id}">${item.name}<span>${item.id==='all'?links.length:links.filter(link=>link.category===item.id).length}</span></button>`).join('');
-  const shownCategories = active === 'all' ? categories : categories.filter(category => category.id === active);
+  const orderedCategories = categoryOrder.map(id => categoryById(id)).filter(Boolean);
+  const shownCategories = active === 'all' ? orderedCategories : categories.filter(category => category.id === active);
   const sections = shownCategories.map(category => ({category,items:matching(category.id)})).filter(section => section.items.length || !query);
   const count = sections.reduce((sum,section) => sum + section.items.length,0);
   document.querySelector('#pageTitle').textContent = active === 'all' ? 'All resources' : categoryById(active)?.name || '';
   document.querySelector('#pageCount').textContent = `${count} ${count===1?'link':'links'}`;
-  document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel" style="--category:${category.color}"><header><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map(linkCard).join('')}</div></section>`).join('');
+  document.querySelector('#content').className = active === 'all' ? 'dashboard-grid' : 'single-category';
+  document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel" data-panel="${category.id}" draggable="${active==='all'}" style="--category:${category.color}"><header><span class="drag-handle" title="Drag to move category">⠿</span><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map(linkCard).join('')}</div></section>`).join('');
   document.querySelector('#empty').hidden = count > 0;
 }
 
 document.addEventListener('click', event => {
   const categoryButton = event.target.closest('[data-category]');
   if (categoryButton) { active=categoryButton.dataset.category; render(); }
-  if (event.target.closest('[data-add]')) document.querySelector('#backdrop').hidden=false;
+  if (event.target.closest('[data-add]')) openModal();
   const removeButton = event.target.closest('[data-remove]');
-  if (removeButton) { event.preventDefault(); links=links.filter(link=>String(link.id)!==removeButton.dataset.remove); save(); render(); }
+  if (removeButton) { event.preventDefault(); const link=links.find(item=>String(item.id)===removeButton.dataset.remove); if(link && window.confirm(`Remove “${link.name}” from the portal?`)){links=links.filter(item=>String(item.id)!==removeButton.dataset.remove);save();render()} }
+  const editButton = event.target.closest('[data-edit]');
+  if (editButton) { event.preventDefault(); openModal(links.find(link=>String(link.id)===editButton.dataset.edit)); }
+  const sizeButton = event.target.closest('[data-size]');
+  if (sizeButton) { cardSize=sizeButton.dataset.size;localStorage.setItem('twlf-card-size',cardSize);render(); }
 });
 
 document.querySelector('#search').addEventListener('input', event => { query=event.target.value.trim().toLowerCase(); render(); });
 document.addEventListener('keydown', event => { if(event.key==='/' && document.activeElement.tagName!=='INPUT'){event.preventDefault();document.querySelector('#search').focus()} });
 
-const closeModal=()=>document.querySelector('#backdrop').hidden=true;
+function openModal(link=null){editingId=link?.id||null;const form=document.querySelector('#form');form.reset();document.querySelector('#modalTitle').textContent=link?'Edit portal link':'Add a portal link';document.querySelector('#modalIntro').textContent=link?'Change its name, destination, category, or logo.':'Add a destination to this browser’s TWLF portal.';document.querySelector('#saveLink').textContent=link?'Save changes':'Add link';if(link){form.elements.name.value=link.name;form.elements.url.value=link.url;form.elements.logo.value=link.logo||'';form.elements.category.value=link.category}document.querySelector('#backdrop').hidden=false}
+const closeModal=()=>{document.querySelector('#backdrop').hidden=true;editingId=null};
 document.querySelector('#close').onclick=closeModal; document.querySelector('#cancel').onclick=closeModal;
 document.querySelector('#backdrop').addEventListener('click',event=>{if(event.target.id==='backdrop')closeModal()});
 document.querySelector('#categorySelect').innerHTML=categories.map(category=>`<option value="${category.id}">${category.name}</option>`).join('');
-document.querySelector('#form').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;const category=categoryById(data.category);links.push({id:`custom-${Date.now()}`,name:data.name.trim(),url:data.url,category:data.category,color:category.color});save();event.target.reset();closeModal();document.querySelector('#notice').innerHTML='<div class="notice">Link added to your portal.<button aria-label="Dismiss">×</button></div>';render()});
+document.querySelector('#form').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;const category=categoryById(data.category);const entry={name:data.name.trim(),url:data.url,logo:data.logo.trim(),category:data.category,color:category.color};const wasEditing=Boolean(editingId);if(wasEditing){links=links.map(link=>String(link.id)===String(editingId)?{...link,...entry}:link)}else{links.push({id:`custom-${Date.now()}`,...entry})}save();event.target.reset();closeModal();document.querySelector('#notice').innerHTML=`<div class="notice">${wasEditing?'Link updated':'Link added to your portal'}.<button aria-label="Dismiss">×</button></div>`;render()});
 
 document.querySelector('#theme').addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('twlf-theme',next);document.querySelector('#themeIcon').textContent=next==='dark'?'☀':'☾'});
 const theme=localStorage.getItem('twlf-theme')||'light';document.documentElement.dataset.theme=theme;document.querySelector('#themeIcon').textContent=theme==='dark'?'☀':'☾';
 document.querySelector('#reset').addEventListener('click',()=>{links=seed.map(link=>({...link}));localStorage.removeItem(storageKey);document.querySelector('#reset').hidden=true;render()});
 document.querySelector('#reset').hidden=!localStorage.getItem(storageKey);render();
+
+let draggedPanel=null;
+document.querySelector('#content').addEventListener('dragstart',event=>{const panel=event.target.closest('[data-panel]');if(!panel||active!=='all')return;draggedPanel=panel.dataset.panel;panel.classList.add('dragging');event.dataTransfer.effectAllowed='move'});
+document.querySelector('#content').addEventListener('dragover',event=>{if(!draggedPanel)return;event.preventDefault();const panel=event.target.closest('[data-panel]');document.querySelectorAll('[data-panel]').forEach(item=>item.classList.toggle('drag-target',item===panel&&item.dataset.panel!==draggedPanel))});
+document.querySelector('#content').addEventListener('drop',event=>{event.preventDefault();const target=event.target.closest('[data-panel]')?.dataset.panel;if(!target||target===draggedPanel)return;const from=categoryOrder.indexOf(draggedPanel),to=categoryOrder.indexOf(target);categoryOrder.splice(from,1);categoryOrder.splice(to,0,draggedPanel);localStorage.setItem('twlf-category-order',JSON.stringify(categoryOrder));draggedPanel=null;render()});
+document.querySelector('#content').addEventListener('dragend',()=>{draggedPanel=null;document.querySelectorAll('[data-panel]').forEach(item=>item.classList.remove('dragging','drag-target'))});

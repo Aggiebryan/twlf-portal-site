@@ -7,12 +7,16 @@
   <meta name="description" content="The Woodlands Law Firm work portal">
   <link rel="icon" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="workspace.css">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="#"><span class="brandmark">TW</span><span><b>TWLF</b> Portal</span></a>
     <label class="search"><span>⌕</span><input id="search" placeholder="Search portal…" autocomplete="off"><kbd>/</kbd></label>
     <div class="actions">
+      <div class="size-control" aria-label="Card size">
+        <button data-size="small" title="Small cards">S</button><button data-size="standard" title="Standard cards">M</button><button data-size="large" title="Large cards">L</button>
+      </div>
       <button class="icon-button" id="theme" aria-label="Switch color theme"><span id="themeIcon">☾</span></button>
       <button class="add-button" data-add><span>＋</span> Add link</button>
     </div>
@@ -30,12 +34,13 @@
   <div class="modal-backdrop" id="backdrop" hidden>
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button class="close" id="close" aria-label="Close">×</button>
-      <h2 id="modalTitle">Add a portal link</h2><p>Add a destination to this browser’s TWLF portal.</p>
+      <h2 id="modalTitle">Add a portal link</h2><p id="modalIntro">Add a destination to this browser’s TWLF portal.</p>
       <form id="form">
         <label>NAME<input name="name" placeholder="e.g. Benefits Portal" required maxlength="60"></label>
         <label>WEB ADDRESS<input name="url" placeholder="https://portal.example.com" required inputmode="url"></label>
+        <label>CUSTOM LOGO ADDRESS <span class="optional">OPTIONAL</span><input name="logo" placeholder="https://example.com/logo.png" inputmode="url"></label>
         <label>CATEGORY<select name="category" id="categorySelect"></select></label>
-        <div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save">Add link</button></div>
+        <div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save" id="saveLink">Add link</button></div>
       </form>
     </section>
   </div>
