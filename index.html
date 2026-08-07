@@ -1,8 +1,44 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Firm Hub — Your digital front door</title><meta name="description" content="One organized home for your firm's most-used tools and resources."><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="styles.css"></head><body><main class="shell">
-<header class="topbar"><a class="brand" href="#top"><span class="brandmark">FH</span><span>FIRM <b>HUB</b></span></a><div class="top-actions"><span class="date">Your team’s digital front door</span><button class="add-button" data-add><span>＋</span> Add a link</button><button class="avatar">BR</button></div></header>
-<section class="hero" id="top"><div class="eyebrow"><span></span> EVERYTHING YOUR FIRM NEEDS</div><h1>Where would you like<br>to go <em>today?</em></h1><p>Your most-used tools, resources and workspaces—organized in one calm place.</p><label class="search"><span>⌕</span><input id="search" placeholder="Search tools, resources, or categories…" autocomplete="off"><kbd>⌘ K</kbd></label></section>
-<nav class="categories" id="categories" aria-label="Link categories"></nav><div id="notice"></div>
-<section class="link-section"><div class="section-heading"><div><p id="section-label">YOUR WORKSPACE</p><h2 id="section-title">Frequently used</h2></div><span id="count"></span></div><div class="grid" id="grid"></div><div class="empty" id="empty" hidden><span>⌕</span><h3>No destinations found</h3><p>Try another search or add the link your team needs.</p><button data-add>Add a link</button></div></section>
-<footer><span class="brandmark small">FH</span><p>Built for focus. Designed for your firm.</p><button data-add>Missing something? <b>Add it here →</b></button></footer>
-<div class="modal-backdrop" id="backdrop" hidden><section class="modal" role="dialog" aria-modal="true"><button class="close" id="close">×</button><div class="modal-icon">＋</div><p class="eyebrow compact">GROW YOUR HUB</p><h2>Add a new destination</h2><p class="modal-intro">Share a useful site with everyone at the firm.</p><form id="form"><label>NAME<input name="title" placeholder="e.g. Benefits Portal" required maxlength="60"></label><label>WEB ADDRESS<input name="url" placeholder="portal.example.com" required></label><div class="form-row"><label>CATEGORY<select name="category"><option>Everyday</option><option>Client Work</option><option>Communication</option><option>Operations</option><option selected>Resources</option></select></label><label>SHORT DESCRIPTION<input name="description" placeholder="What is it used for?" required maxlength="90"></label></div><div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save">Add to Firm Hub</button></div></form></section></div>
-</main><script src="app.js" defer></script></body></html>
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TWLF Work Portal</title>
+  <meta name="description" content="The Woodlands Law Firm work portal">
+  <link rel="icon" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brandmark">TW</span><span><b>TWLF</b> Portal</span></a>
+    <label class="search"><span>⌕</span><input id="search" placeholder="Search portal…" autocomplete="off"><kbd>/</kbd></label>
+    <div class="actions">
+      <button class="icon-button" id="theme" aria-label="Switch color theme"><span id="themeIcon">☾</span></button>
+      <button class="add-button" data-add><span>＋</span> Add link</button>
+    </div>
+  </header>
+
+  <nav class="category-nav" id="categoryNav" aria-label="Portal categories"></nav>
+
+  <main class="workspace">
+    <div class="workspace-head"><div><h1 id="pageTitle">All resources</h1><p id="pageCount"></p></div><button class="text-button" id="reset" hidden>Restore default links</button></div>
+    <div id="notice"></div>
+    <div id="content"></div>
+    <div class="empty" id="empty" hidden><span>⌕</span><h2>No links found</h2><p>Try another search or add a new destination.</p><button class="add-button" data-add>Add link</button></div>
+  </main>
+
+  <div class="modal-backdrop" id="backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="close" id="close" aria-label="Close">×</button>
+      <h2 id="modalTitle">Add a portal link</h2><p>Add a destination to this browser’s TWLF portal.</p>
+      <form id="form">
+        <label>NAME<input name="name" placeholder="e.g. Benefits Portal" required maxlength="60"></label>
+        <label>WEB ADDRESS<input name="url" placeholder="https://portal.example.com" required inputmode="url"></label>
+        <label>CATEGORY<select name="category" id="categorySelect"></select></label>
+        <div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save">Add link</button></div>
+      </form>
+    </section>
+  </div>
+  <script src="app.js" defer></script>
+</body>
+</html>

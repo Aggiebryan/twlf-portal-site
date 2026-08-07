@@ -1,7 +1,79 @@
-const seed=[[-1,'Microsoft 365','https://www.microsoft365.com','Everyday','Email, calendar and documents','#e85d3f'],[-2,'SharePoint','https://www.microsoft.com/microsoft-365/sharepoint/collaboration','Everyday','Firm files and collaboration','#07807b'],[-3,'Salesforce','https://www.salesforce.com','Client Work','Clients, contacts and pipeline','#188bc2'],[-4,'DocuSign','https://www.docusign.com','Client Work','Signatures and agreements','#f4d13d'],[-5,'Zoom','https://zoom.us','Communication','Meetings and webinars','#4f6ee8'],[-6,'Slack','https://slack.com','Communication','Team channels and messages','#5b2c5e'],[-7,'QuickBooks','https://quickbooks.intuit.com','Operations','Billing and accounting','#2a9a5b'],[-8,'Legacy Portal','https://portla.twlf.dev','Operations','Existing firm resources','#26364a']].map(([id,title,url,category,description,color])=>({id,title,url,category,description,color}));
-const cats=['All','Everyday','Client Work','Communication','Operations','Resources'];let links=JSON.parse(localStorage.getItem('firm-hub-links')||'null')||seed,active='All',q='',favs=JSON.parse(localStorage.getItem('firm-hub-favorites')||'[]');
-const host=u=>{try{return new URL(u).hostname}catch{return u}},logo=u=>`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host(u))}&sz=128`;
-function render(){const filtered=links.filter(l=>(active==='All'||l.category===active)&&`${l.title} ${l.description} ${l.category}`.toLowerCase().includes(q)).sort((a,b)=>favs.includes(b.id)-favs.includes(a.id));document.querySelector('#categories').innerHTML=cats.map(c=>`<button class="${active===c?'active':''}" data-cat="${c}">${c}${c==='All'?`<span>${links.length}</span>`:''}</button>`).join('');document.querySelector('#section-label').textContent=active==='All'?'YOUR WORKSPACE':active.toUpperCase();document.querySelector('#section-title').textContent=active==='All'?'Frequently used':`${active} tools`;document.querySelector('#count').textContent=`${filtered.length} destinations`;document.querySelector('#grid').innerHTML=filtered.map((l,i)=>`<article class="link-card" style="--accent:${l.color};animation-delay:${Math.min(i,8)*45}ms"><button class="star ${favs.includes(l.id)?'saved':''}" data-star="${l.id}">★</button><a href="${l.url}" target="_blank" rel="noreferrer" class="card-link"><div class="logo-wrap"><span class="fallback">${l.title.slice(0,2).toUpperCase()}</span><img src="${logo(l.url)}" alt=""></div><div class="card-copy"><span class="category-label">${l.category}</span><h3>${l.title}</h3><p>${l.description}</p><small>${host(l.url)} <b>↗</b></small></div></a></article>`).join('');document.querySelector('#empty').hidden=filtered.length>0}
-document.addEventListener('click',e=>{const cat=e.target.closest('[data-cat]');if(cat){active=cat.dataset.cat;render()}const star=e.target.closest('[data-star]');if(star){e.preventDefault();const id=Number(star.dataset.star);favs=favs.includes(id)?favs.filter(x=>x!==id):[...favs,id];localStorage.setItem('firm-hub-favorites',JSON.stringify(favs));render()}if(e.target.closest('[data-add]'))document.querySelector('#backdrop').hidden=false});
-document.querySelector('#search').addEventListener('input',e=>{q=e.target.value.toLowerCase();render()});const close=()=>document.querySelector('#backdrop').hidden=true;document.querySelector('#close').onclick=close;document.querySelector('#cancel').onclick=close;document.querySelector('#backdrop').addEventListener('click',e=>{if(e.target.id==='backdrop')close()});
-document.querySelector('#form').addEventListener('submit',e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;data.color=['#243b55','#c85a3d','#2b7a78','#6750a4'][links.length%4];links=[...links,{...data,id:Date.now()}];localStorage.setItem('firm-hub-links',JSON.stringify(links));e.target.reset();close();document.querySelector('#notice').innerHTML='<div class="notice">✓ Link added to your Firm Hub.</div>';render()});render();
+const categories = [
+  { id: 'most-used', name: 'Most Used', color: '#d9623f' },
+  { id: 'govt', name: 'Government Offices/Courts', color: '#8f405d' },
+  { id: 'twlf', name: 'TWLF Pages', color: '#287b67' },
+  { id: 'reference', name: 'Reference', color: '#b88524' },
+  { id: 'state-bar', name: 'State Bar', color: '#a33c35' },
+  { id: 'ai', name: 'AI Tools', color: '#6656a5' },
+  { id: 'associations', name: 'Associations', color: '#267b7d' },
+];
+
+const seed = [
+  ['t1','Clio','https://account.clio.com/','most-used','#0B70CE'],['t2','Box','https://app.box.com/folder/0','most-used','#0061D5'],['t3','eFile Texas','https://www.efiletexas.gov/','most-used','#1C3A5F'],['t4','Proof','https://app.proofserve.com/','most-used','#27AE60'],['t5','WestLaw','https://lawschool.thomsonreuters.com/','most-used','#E87722'],['t6','LexisNexis','https://plusai.lexis.com/','most-used','#D0232A'],['t7','Letterstream','https://www.letterstream.com/','most-used','#2980B9'],['t8','Public Data','https://www.publicdata.com/','most-used','#6C3483'],['t9','eFile Texas (Old)','https://texas.tylertech.cloud/OfsWeb','most-used','#5D6D7E'],['t10','re:SearchTX','https://research.txcourts.gov/CourtRecordsSearch/#!/dashboard','most-used','#1A5276'],['t11','CRIS Purchase','https://cris.dot.state.tx.us/public/Purchase/app/home','most-used','#117A65'],['t12','Houston Public Records','https://houstontx.govqa.us/WEBAPP/_rs/(S(x1znyclu25l1jq31hgycgwrs))/SupportHome.aspx','most-used','#C0392B'],
+  ['t13','MoCo District Clerk','https://www.mctx.org/departments/departments_d_-_f/district_clerk/index.php','govt','#8B1A4A'],['t14','MoCo Odyssey','https://odyssey.mctx.org/Secured/Login.aspx','govt','#A93226'],['t15','HC District Clerk','https://www.hcdistrictclerk.com/Common/Default.aspx','govt','#6C3483'],['t16','HC County Clerk','https://cclerk.hctx.net/','govt','#1C2833'],['t17','Secretary of State','https://www.sos.state.tx.us/corp/sosda/index.shtml','govt','#148F77'],['t18','PACER','https://pacer.login.uscourts.gov/csologin/login.jsf','govt','#21618C'],['t19','Harris JP Public','http://www.jp.hctx.net/#gsc.tab=0','govt','#CA6F1E'],['t20','Harris JP Odyssey','https://jpodysseyportal.harriscountytx.gov/OdysseyPortalJP','govt','#AF601A'],['t21','Jefferson Co Clerk','https://co.jefferson.tx.us/dclerk/index.html','govt','#117A65'],['t22','Harris Probate','https://www.cclerk.hctx.net/applications/websearch/CourtSearch.aspx?CaseType=Probate','govt','#7D3C98'],['t23','MoCo County Clerk','https://countyfusion1.kofiletech.us/countyweb/loginDisplay.action?countyname=MontgomeryTX','govt','#C0392B'],['t24','Galveston Clerk','https://www.galvestoncountytx.gov/our-county/district-clerk','govt','#2471A3'],['t25','MoCo County Odyssey','https://odyssey.mctx.org/County/default.aspx','govt','#D4AC0D'],
+  ['t26','Estate Site','https://woodlandslawestate.com','twlf','#1E8449'],['t27','Woodlands Law','https://Woodlands.law','twlf','#196F3D'],['t28','WordPress','https://woodlandslaw.info/wp/','twlf','#21759B'],['t29','N8N','https://n8n.twlf.dev/','twlf','#EA4B71'],['t30','Cal.com','https://app.cal.com/','twlf','#292929'],['t31','Phone Intake','https://intake.twlf.dev','twlf','#27AE60'],
+  ['t32','TexasLawHelp','https://texaslawhelp.org/','reference','#D4A017'],['t33','TX Free Legal Answers','https://texas.freelegalanswers.org/','reference','#2471A3'],['t34','Pre-Judgment Calc','http://www.csgnetwork.com/interestloancalc.html','reference','#CA6F1E'],['t35','Post-Judgment Calc','https://www.webwinder.com/calculators/post_judge_calc.html','reference','#C0392B'],['t36','Houston Incidents','https://dmwilson.info/','reference','#922B21'],['t37','Debt Collector Lookup','https://direct.sos.state.tx.us/debtcollectors/DCSearch.asp','reference','#6C3483'],['t38','Date Calculator','https://www.timeanddate.com/date/duration.html','reference','#1C2833'],['t39','SCRA','https://scra.dmdc.osd.mil/scra/#/login','reference','#148F77'],['t40','STCL Clinic','https://www.stcl.edu/academics/legal-clinics/request-legal-assistance/','reference','#7D3C98'],['t41','Bloomberg Law','https://news.bloomberglaw.com/','reference','#1A5276'],['t42','Checkpoint','https://checkpoint.riag.com/app/login','reference','#1E8449'],['t43','Court Deadlines','https://courtdeadlines.com/','reference','#C0392B'],['t44','Clio University','https://cliouniversity.learnupon.com/dashboard','reference','#0B70CE'],
+  ['t45','ChatGPT','https://chat.openai.com/','ai','#10A37F'],['t46','Gemini','https://deepmind.google/technologies/gemini/','ai','#4285F4'],['t47','Claude','https://claude.ai/new','ai','#D97757'],['t48','Grammarly','https://app.grammarly.com/','ai','#15C39A'],['t49','GroqChat','https://chat.groq.com/','ai','#F55036'],['t50','QuillBot','https://quillbot.com','ai','#499557'],['t51','WLF-AI','https://wlf-ai.com/','ai','#7D3C98'],['t52','N8N Auto','https://n8n.twlf.dev/','ai','#EA4B71'],['t53','Prompt Library','https://docs.anthropic.com/en/resources/prompt-library/library','ai','#D97757'],['t54','Perplexity','https://www.perplexity.ai/','ai','#1FB8CD'],['t55','NotebookLM','https://notebooklm.google.com/','ai','#FBBC04'],['t56','GPT Prompts','https://academy.openai.com/public/clubs/work-users-ynjqu/resources/chatgpt-for-any-role','ai','#10A37F'],['t57','PimEyes','https://pimeyes.com/en','ai','#CA6F1E'],['t58','Fathom','https://fathom.video/','ai','#7C3AED'],['t59','Spellbook','https://www.spellbook.legal/','ai','#6366F1'],['t60','EvenUp','https://www.evenuplaw.com/','ai','#2563EB'],['t61','DISCO','https://csdisco.com/','ai','#06B6D4'],['t62','Pre-dicta','https://www.pre-dicta.com/','ai','#14B8A6'],['t63','SlidesAI','https://www.slidesai.io/','ai','#F59E0B'],['t64','Beautiful.ai','https://www.beautiful.ai/','ai','#EC4899'],
+  ['t72','Bar Benefits','https://texasbar.memberbenefits.com/','state-bar','#C0392B'],['t73','State Bar of TX','https://www.texasbar.com/AM/Template.cfm?Section=Lawyers_Home','state-bar','#922B21'],['t74','LRIS','https://www.texasbar.com/AM/Template.cfm?Section=Join_or_Manage_Your_LRIS_Account','state-bar','#CA6F1E'],['t75','TX Bar Careers','https://l.tx.bar.associationcareernetwork.com/','state-bar','#2471A3'],['t76','TLAP','https://www.tlaphelps.org/','state-bar','#27AE60'],['t77','TexasBarCLE','http://www.texasbarcle.com/CLE/Home.asp','state-bar','#7D3C98'],['t78','TX Bar Practice','https://www.texasbarpractice.com/','state-bar','#D4A017'],
+  ['t79','Houston Bar','https://www.hba.org/?pg=myhba','associations','#148F77'],['t80','Woodlands Bar','https://www.woodlandsbarassociation.com/','associations','#1E8449'],['t81','Federalist Society','https://fedsoc.org/','associations','#1C2833'],['t82','MoCo Bar Assoc','https://mcbatx.com/','associations','#117A65'],
+].map(([id,name,url,category,color]) => ({ id,name,url,category,color }));
+
+const storageKey = 'twlf-firm-hub-links-v3';
+let links = JSON.parse(localStorage.getItem(storageKey) || 'null') || seed;
+let active = 'all';
+let query = '';
+
+const categoryById = id => categories.find(category => category.id === id);
+const hostname = url => { try { return new URL(url).hostname.replace(/^www\./,''); } catch { return url; } };
+const logo = url => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname(url))}&sz=128`;
+const escapeHtml = value => { const node=document.createElement('div'); node.textContent=value; return node.innerHTML; };
+
+function save() { localStorage.setItem(storageKey, JSON.stringify(links)); document.querySelector('#reset').hidden = false; }
+
+function linkCard(link, index) {
+  const safeName=escapeHtml(link.name), safeUrl=escapeHtml(link.url), safeHost=escapeHtml(hostname(link.url));
+  return `<article class="link-card" style="--accent:${link.color};--delay:${Math.min(index,16)*18}ms">
+    <button class="remove" data-remove="${link.id}" aria-label="Remove ${safeName}" title="Remove link">×</button>
+    <a href="${safeUrl}" target="_blank" rel="noreferrer">
+      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${logo(link.url)}" alt=""></span>
+      <span class="link-copy"><strong>${safeName}</strong><small>${safeHost}</small></span><span class="open">↗</span>
+    </a></article>`;
+}
+
+function matching(categoryId) {
+  return links.filter(link => link.category === categoryId && `${link.name} ${hostname(link.url)}`.toLowerCase().includes(query));
+}
+
+function render() {
+  const nav = [{id:'all',name:'All'},...categories];
+  document.querySelector('#categoryNav').innerHTML = nav.map(item => `<button class="${active===item.id?'active':''}" data-category="${item.id}">${item.name}<span>${item.id==='all'?links.length:links.filter(link=>link.category===item.id).length}</span></button>`).join('');
+  const shownCategories = active === 'all' ? categories : categories.filter(category => category.id === active);
+  const sections = shownCategories.map(category => ({category,items:matching(category.id)})).filter(section => section.items.length || !query);
+  const count = sections.reduce((sum,section) => sum + section.items.length,0);
+  document.querySelector('#pageTitle').textContent = active === 'all' ? 'All resources' : categoryById(active)?.name || '';
+  document.querySelector('#pageCount').textContent = `${count} ${count===1?'link':'links'}`;
+  document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel" style="--category:${category.color}"><header><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map(linkCard).join('')}</div></section>`).join('');
+  document.querySelector('#empty').hidden = count > 0;
+}
+
+document.addEventListener('click', event => {
+  const categoryButton = event.target.closest('[data-category]');
+  if (categoryButton) { active=categoryButton.dataset.category; render(); }
+  if (event.target.closest('[data-add]')) document.querySelector('#backdrop').hidden=false;
+  const removeButton = event.target.closest('[data-remove]');
+  if (removeButton) { event.preventDefault(); links=links.filter(link=>String(link.id)!==removeButton.dataset.remove); save(); render(); }
+});
+
+document.querySelector('#search').addEventListener('input', event => { query=event.target.value.trim().toLowerCase(); render(); });
+document.addEventListener('keydown', event => { if(event.key==='/' && document.activeElement.tagName!=='INPUT'){event.preventDefault();document.querySelector('#search').focus()} });
+
+const closeModal=()=>document.querySelector('#backdrop').hidden=true;
+document.querySelector('#close').onclick=closeModal; document.querySelector('#cancel').onclick=closeModal;
+document.querySelector('#backdrop').addEventListener('click',event=>{if(event.target.id==='backdrop')closeModal()});
+document.querySelector('#categorySelect').innerHTML=categories.map(category=>`<option value="${category.id}">${category.name}</option>`).join('');
+document.querySelector('#form').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;const category=categoryById(data.category);links.push({id:`custom-${Date.now()}`,name:data.name.trim(),url:data.url,category:data.category,color:category.color});save();event.target.reset();closeModal();document.querySelector('#notice').innerHTML='<div class="notice">Link added to your portal.<button aria-label="Dismiss">×</button></div>';render()});
+
+document.querySelector('#theme').addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('twlf-theme',next);document.querySelector('#themeIcon').textContent=next==='dark'?'☀':'☾'});
+const theme=localStorage.getItem('twlf-theme')||'light';document.documentElement.dataset.theme=theme;document.querySelector('#themeIcon').textContent=theme==='dark'?'☀':'☾';
+document.querySelector('#reset').addEventListener('click',()=>{links=seed.map(link=>({...link}));localStorage.removeItem(storageKey);document.querySelector('#reset').hidden=true;render()});
+document.querySelector('#reset').hidden=!localStorage.getItem(storageKey);render();
