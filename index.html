@@ -54,10 +54,12 @@
       <h2 id="settingsTitle">Portal settings</h2><p>Adjust how much fits across your workspace.</p>
       <label class="range-label">DISPLAY COLUMNS <output id="columnCount">2</output><input id="columns" type="range" min="1" max="4" step="1" value="2"></label>
       <form id="categoryForm" class="category-form"><strong>Add a category</strong><div><input name="name" placeholder="Category name" required maxlength="40"><input name="color" type="color" value="#287b67" aria-label="Category color"><button class="save">Add</button></div></form>
-      <div class="account-panel"><div><strong>Your portal</strong><p id="accountStatus">Saved on this device</p></div><button class="account-button" id="settingsAccount">Sign in</button></div>
-      <p class="sync-note">Account sync will keep links, sizes, logos, and layout consistent on every device.</p>
+      <div class="account-panel"><div><strong id="accountName">Your portal</strong><p id="accountStatus">Not signed in</p></div><button class="account-button" id="settingsAccount">Sign in</button></div>
+      <p class="sync-note">Sign in with your woodlands.law Microsoft 365 account. Portal preferences are currently saved on this device.</p>
     </section>
   </div>
+  <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js" defer></script>
+  <script src="auth.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
