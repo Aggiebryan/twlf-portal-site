@@ -1,4 +1,4 @@
-const categories = [
+const baseCategories = [
   { id: 'most-used', name: 'Most Used', color: '#d9623f' },
   { id: 'govt', name: 'Government Offices/Courts', color: '#8f405d' },
   { id: 'twlf', name: 'TWLF Pages', color: '#287b67' },
@@ -7,6 +7,9 @@ const categories = [
   { id: 'ai', name: 'AI Tools', color: '#6656a5' },
   { id: 'associations', name: 'Associations', color: '#267b7d' },
 ];
+const categoryStorageKey='twlf-custom-categories';
+let customCategories=JSON.parse(localStorage.getItem(categoryStorageKey)||'[]');
+let categories=[...baseCategories,...customCategories];
 
 const seed = [
   ['t1','Clio','https://account.clio.com/','most-used','#0B70CE'],['t2','Box','https://app.box.com/folder/0','most-used','#0061D5'],['t3','eFile Texas','https://www.efiletexas.gov/','most-used','#1C3A5F'],['t4','Proof','https://app.proofserve.com/','most-used','#27AE60'],['t5','WestLaw','https://lawschool.thomsonreuters.com/','most-used','#E87722'],['t6','LexisNexis','https://plusai.lexis.com/','most-used','#D0232A'],['t7','Letterstream','https://www.letterstream.com/','most-used','#2980B9'],['t8','Public Data','https://www.publicdata.com/','most-used','#6C3483'],['t9','eFile Texas (Old)','https://texas.tylertech.cloud/OfsWeb','most-used','#5D6D7E'],['t10','re:SearchTX','https://research.txcourts.gov/CourtRecordsSearch/#!/dashboard','most-used','#1A5276'],['t11','CRIS Purchase','https://cris.dot.state.tx.us/public/Purchase/app/home','most-used','#117A65'],['t12','Houston Public Records','https://houstontx.govqa.us/WEBAPP/_rs/(S(x1znyclu25l1jq31hgycgwrs))/SupportHome.aspx','most-used','#C0392B'],
@@ -20,11 +23,16 @@ const seed = [
 
 const storageKey = 'twlf-firm-hub-links-v3';
 let links = JSON.parse(localStorage.getItem(storageKey) || 'null') || seed;
+const legacyHome={t1:'twlf',t2:'twlf',t3:'govt',t4:'twlf',t5:'reference',t6:'reference',t7:'twlf',t8:'reference',t9:'govt',t10:'govt',t11:'govt',t12:'govt'};
+links=links.map(link=>link.category==='most-used'?{...link,category:legacyHome[link.id]||'reference',mostUsed:true,mostUsedSize:link.size||'standard'}:link);
 let active = 'all';
 let query = '';
 let displayColumns = Number(localStorage.getItem('twlf-display-columns') || 2);
 let categoryOrder = JSON.parse(localStorage.getItem('twlf-category-order') || 'null') || categories.map(category => category.id);
+categoryOrder=['most-used',...categoryOrder.filter(id=>id!=='most-used'),...categories.map(category=>category.id).filter(id=>!categoryOrder.includes(id))];
+let mostUsedOrder=JSON.parse(localStorage.getItem('twlf-most-used-order')||'[]');
 let editingId = null;
+let editingContext = null;
 
 const categoryById = id => categories.find(category => category.id === id);
 const hostname = url => { try { return new URL(url).hostname.replace(/^www\./,''); } catch { return url; } };
@@ -33,14 +41,16 @@ const escapeHtml = value => { const node=document.createElement('div'); node.tex
 
 function save() { localStorage.setItem(storageKey, JSON.stringify(links)); document.querySelector('#reset').hidden = false; }
 
-function linkCard(link, index) {
+function linkCard(link, index, context) {
   const safeName=escapeHtml(link.name), safeUrl=escapeHtml(link.url), safeHost=escapeHtml(hostname(link.url));
-  const size=['small','standard','large'].includes(link.size)?link.size:'standard';
+  const selectedSize=context==='most-used'?(link.mostUsedSize||link.size):link.size;
+  const size=['small','standard','large'].includes(selectedSize)?selectedSize:'standard';
+  const sourceCategory=categoryById(link.category);
   const description=escapeHtml(link.description || `${categoryById(link.category)?.name || 'Portal'} resource`);
-  return `<article class="link-card size-${size}" data-link="${link.id}" style="--accent:${link.color};--delay:${Math.min(index,16)*18}ms">
+  return `<article class="link-card size-${size} ${context==='most-used'?'most-used-card':''}" data-link="${link.id}" data-context="${context}" style="--accent:${link.color};--source-color:${sourceCategory?.color||link.color};--delay:${Math.min(index,16)*18}ms">
     <button class="card-drag" draggable="true" aria-label="Move ${safeName}" title="Drag to reorder">⠿</button>
-    <button class="remove" data-remove="${link.id}" aria-label="Remove ${safeName}" title="Remove link">×</button>
-    <button class="edit" data-edit="${link.id}" aria-label="Edit ${safeName}" title="Edit link and logo">✎</button>
+    <button class="remove" data-remove="${link.id}" data-remove-context="${context}" aria-label="Remove ${safeName}" title="${context==='most-used'?'Remove from Most Used':'Remove link'}">×</button>
+    <button class="edit" data-edit="${link.id}" data-edit-context="${context}" aria-label="Edit ${safeName}" title="Edit link and logo">✎</button>
     <a href="${safeUrl}" target="_blank" rel="noreferrer">
       <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || logo(link.url))}" alt="" onerror="this.style.display='none'"></span>
       <span class="link-copy"><strong>${safeName}</strong><small class="link-address">${safeHost}</small><small class="description">${description}</small></span><span class="open">↗</span>
@@ -48,21 +58,22 @@ function linkCard(link, index) {
 }
 
 function matching(categoryId) {
-  return links.filter(link => link.category === categoryId && `${link.name} ${hostname(link.url)}`.toLowerCase().includes(query));
+  const found=links.filter(link => (categoryId==='most-used'?link.mostUsed:link.category===categoryId) && `${link.name} ${hostname(link.url)}`.toLowerCase().includes(query));
+  return categoryId==='most-used'?[...found].sort((a,b)=>{const ai=mostUsedOrder.indexOf(String(a.id)),bi=mostUsedOrder.indexOf(String(b.id));return (ai<0?9999:ai)-(bi<0?9999:bi)}):found;
 }
 
 function render() {
   document.documentElement.style.setProperty('--display-columns',displayColumns);
   const nav = [{id:'all',name:'All'},...categories];
-  document.querySelector('#categoryNav').innerHTML = nav.map(item => `<button class="${active===item.id?'active':''}" data-category="${item.id}">${item.name}<span>${item.id==='all'?links.length:links.filter(link=>link.category===item.id).length}</span></button>`).join('');
-  const orderedCategories = categoryOrder.map(id => categoryById(id)).filter(Boolean);
+  document.querySelector('#categoryNav').innerHTML = nav.map(item => `<button class="${active===item.id?'active':''}" data-category="${item.id}">${item.name}<span>${item.id==='all'?links.length:item.id==='most-used'?links.filter(link=>link.mostUsed).length:links.filter(link=>link.category===item.id).length}</span></button>`).join('');
+  const orderedCategories = ['most-used',...categoryOrder.filter(id=>id!=='most-used')].map(id => categoryById(id)).filter(Boolean);
   const shownCategories = active === 'all' ? orderedCategories : categories.filter(category => category.id === active);
   const sections = shownCategories.map(category => ({category,items:matching(category.id)})).filter(section => section.items.length || !query);
   const count = sections.reduce((sum,section) => sum + section.items.length,0);
   document.querySelector('#pageTitle').textContent = active === 'all' ? 'All resources' : categoryById(active)?.name || '';
   document.querySelector('#pageCount').textContent = `${count} ${count===1?'link':'links'}`;
   document.querySelector('#content').className = active === 'all' ? 'dashboard-grid masonry-board' : 'single-category';
-  document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel" data-panel="${category.id}" style="--category:${category.color}"><header draggable="${active==='all'}"><span class="drag-handle" title="Drag to move category">⠿</span><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map(linkCard).join('')}</div></section>`).join('');
+  document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel ${category.id==='most-used'?'pinned-panel':''}" data-panel="${category.id}" style="--category:${category.color}"><header draggable="${active==='all'&&category.id!=='most-used'}"><span class="drag-handle" title="${category.id==='most-used'?'Pinned':'Drag to move category'}">${category.id==='most-used'?'⌖':'⠿'}</span><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map((link,index)=>linkCard(link,index,category.id)).join('')}</div></section>`).join('');
   document.querySelector('#empty').hidden = count > 0;
 }
 
@@ -71,24 +82,26 @@ document.addEventListener('click', event => {
   if (categoryButton) { active=categoryButton.dataset.category; render(); }
   if (event.target.closest('[data-add]')) openModal();
   const removeButton = event.target.closest('[data-remove]');
-  if (removeButton) { event.preventDefault(); const link=links.find(item=>String(item.id)===removeButton.dataset.remove); if(link && window.confirm(`Remove “${link.name}” from the portal?`)){links=links.filter(item=>String(item.id)!==removeButton.dataset.remove);save();render()} }
+  if (removeButton) { event.preventDefault(); const link=links.find(item=>String(item.id)===removeButton.dataset.remove);const fromMostUsed=removeButton.dataset.removeContext==='most-used';if(link && window.confirm(fromMostUsed?`Remove “${link.name}” from Most Used?`:`Remove “${link.name}” from the portal?`)){if(fromMostUsed){link.mostUsed=false}else{links=links.filter(item=>String(item.id)!==removeButton.dataset.remove)}save();render()} }
   const editButton = event.target.closest('[data-edit]');
-  if (editButton) { event.preventDefault(); openModal(links.find(link=>String(link.id)===editButton.dataset.edit)); }
+  if (editButton) { event.preventDefault(); openModal(links.find(link=>String(link.id)===editButton.dataset.edit),editButton.dataset.editContext); }
 });
 
 document.querySelector('#search').addEventListener('input', event => { query=event.target.value.trim().toLowerCase(); render(); });
 document.addEventListener('keydown', event => { if(event.key==='/' && document.activeElement.tagName!=='INPUT'){event.preventDefault();document.querySelector('#search').focus()} });
 
-function openModal(link=null){editingId=link?.id||null;const form=document.querySelector('#form');form.reset();document.querySelector('#modalTitle').textContent=link?'Edit portal link':'Add a portal link';document.querySelector('#modalIntro').textContent=link?'Change its content, size, category, or logo.':'Add a destination to this browser’s TWLF portal.';document.querySelector('#saveLink').textContent=link?'Save changes':'Add link';if(link){form.elements.name.value=link.name;form.elements.url.value=link.url;form.elements.logo.value=link.logo||'';form.elements.description.value=link.description||'';form.elements.category.value=link.category;form.elements.size.value=link.size||'standard'}document.querySelector('#backdrop').hidden=false}
-const closeModal=()=>{document.querySelector('#backdrop').hidden=true;editingId=null};
+function openModal(link=null,context=null){editingId=link?.id||null;editingContext=context;const form=document.querySelector('#form');form.reset();document.querySelector('#modalTitle').textContent=link?'Edit portal link':'Add a portal link';document.querySelector('#modalIntro').textContent=link?'Its category card and Most Used card can have different sizes.':'Add a destination to this browser’s TWLF portal.';document.querySelector('#saveLink').textContent=link?'Save changes':'Add link';if(link){form.elements.name.value=link.name;form.elements.url.value=link.url;form.elements.logo.value=link.logo||'';form.elements.description.value=link.description||'';form.elements.category.value=link.category;form.elements.size.value=link.size||'standard';form.elements.mostUsed.checked=Boolean(link.mostUsed);form.elements.mostUsedSize.value=link.mostUsedSize||link.size||'standard'}toggleMostUsedSize();document.querySelector('#backdrop').hidden=false}
+const closeModal=()=>{document.querySelector('#backdrop').hidden=true;editingId=null;editingContext=null};
 document.querySelector('#close').onclick=closeModal; document.querySelector('#cancel').onclick=closeModal;
 document.querySelector('#backdrop').addEventListener('click',event=>{if(event.target.id==='backdrop')closeModal()});
-document.querySelector('#categorySelect').innerHTML=categories.map(category=>`<option value="${category.id}">${category.name}</option>`).join('');
-document.querySelector('#form').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;const category=categoryById(data.category);const entry={name:data.name.trim(),url:data.url,logo:data.logo.trim(),description:data.description.trim(),size:data.size,category:data.category,color:category.color};const wasEditing=Boolean(editingId);if(wasEditing){links=links.map(link=>String(link.id)===String(editingId)?{...link,...entry}:link)}else{links.push({id:`custom-${Date.now()}`,...entry})}save();event.target.reset();closeModal();document.querySelector('#notice').innerHTML=`<div class="notice">${wasEditing?'Link updated':'Link added to your portal'}.<button aria-label="Dismiss">×</button></div>`;render()});
+function populateCategorySelect(){document.querySelector('#categorySelect').innerHTML=categories.filter(category=>category.id!=='most-used').map(category=>`<option value="${category.id}">${category.name}</option>`).join('')}
+function toggleMostUsedSize(){document.querySelector('#mostUsedSizeLabel').hidden=!document.querySelector('#form').elements.mostUsed.checked}
+populateCategorySelect();document.querySelector('#form').elements.mostUsed.addEventListener('change',toggleMostUsedSize);
+document.querySelector('#form').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;const category=categoryById(data.category);const entry={name:data.name.trim(),url:data.url,logo:data.logo.trim(),description:data.description.trim(),size:data.size,mostUsed:Boolean(data.mostUsed),mostUsedSize:data.mostUsedSize||'standard',category:data.category,color:category.color};const wasEditing=Boolean(editingId);if(wasEditing){links=links.map(link=>String(link.id)===String(editingId)?{...link,...entry}:link)}else{links.push({id:`custom-${Date.now()}`,...entry})}save();event.target.reset();closeModal();document.querySelector('#notice').innerHTML=`<div class="notice">${wasEditing?'Link updated':'Link added to your portal'}.<button aria-label="Dismiss">×</button></div>`;render()});
 
 document.querySelector('#theme').addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('twlf-theme',next);document.querySelector('#themeIcon').textContent=next==='dark'?'☀':'☾'});
 const theme=localStorage.getItem('twlf-theme')||'light';document.documentElement.dataset.theme=theme;document.querySelector('#themeIcon').textContent=theme==='dark'?'☀':'☾';
-document.querySelector('#reset').addEventListener('click',()=>{links=seed.map(link=>({...link}));localStorage.removeItem(storageKey);document.querySelector('#reset').hidden=true;render()});
+document.querySelector('#reset').addEventListener('click',()=>{links=seed.map(link=>link.category==='most-used'?{...link,category:legacyHome[link.id]||'reference',mostUsed:true,mostUsedSize:'standard'}:{...link});localStorage.removeItem(storageKey);mostUsedOrder=[];localStorage.removeItem('twlf-most-used-order');document.querySelector('#reset').hidden=true;render()});
 document.querySelector('#reset').hidden=!localStorage.getItem(storageKey);render();
 
 const settingsBackdrop=document.querySelector('#settingsBackdrop');
@@ -98,10 +111,11 @@ document.querySelector('#settings').addEventListener('click',()=>{settingsBackdr
 document.querySelector('#settingsClose').addEventListener('click',()=>{settingsBackdrop.hidden=true});
 settingsBackdrop.addEventListener('click',event=>{if(event.target===settingsBackdrop)settingsBackdrop.hidden=true});
 columnsInput.addEventListener('input',event=>{displayColumns=Number(event.target.value);document.querySelector('#columnCount').value=displayColumns;localStorage.setItem('twlf-display-columns',displayColumns);render()});
+document.querySelector('#categoryForm').addEventListener('submit',event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.target));const category={id:`custom-category-${Date.now()}`,name:data.name.trim(),color:data.color};customCategories.push(category);categories.push(category);categoryOrder.push(category.id);localStorage.setItem(categoryStorageKey,JSON.stringify(customCategories));localStorage.setItem('twlf-category-order',JSON.stringify(categoryOrder));populateCategorySelect();event.target.reset();event.target.elements.color.value='#287b67';document.querySelector('#notice').innerHTML=`<div class="notice">${escapeHtml(category.name)} category added.<button aria-label="Dismiss">×</button></div>`;render()});
 document.querySelectorAll('#account,#settingsAccount').forEach(button=>button.addEventListener('click',()=>{document.querySelector('#notice').innerHTML='<div class="notice">Secure account sync is ready to connect when the portal’s identity service is configured.<button aria-label="Dismiss">×</button></div>';settingsBackdrop.hidden=true}));
 
-let draggedPanel=null,draggedLink=null;
-document.querySelector('#content').addEventListener('dragstart',event=>{const card=event.target.closest('[data-link]');if(card&&event.target.closest('.card-drag')){draggedLink=card.dataset.link;card.classList.add('dragging');event.dataTransfer.effectAllowed='move';return}const panel=event.target.closest('[data-panel]');if(!panel||active!=='all')return;draggedPanel=panel.dataset.panel;panel.classList.add('dragging');event.dataTransfer.effectAllowed='move'});
-document.querySelector('#content').addEventListener('dragover',event=>{if(draggedLink){const target=event.target.closest('[data-link]');const source=links.find(link=>String(link.id)===draggedLink);const destination=target&&links.find(link=>String(link.id)===target.dataset.link);if(!target||!source||!destination||source.category!==destination.category)return;event.preventDefault();document.querySelectorAll('[data-link]').forEach(item=>item.classList.toggle('card-drag-target',item===target&&item.dataset.link!==draggedLink));return}if(!draggedPanel)return;event.preventDefault();const panel=event.target.closest('[data-panel]');document.querySelectorAll('[data-panel]').forEach(item=>item.classList.toggle('drag-target',item===panel&&item.dataset.panel!==draggedPanel))});
-document.querySelector('#content').addEventListener('drop',event=>{event.preventDefault();if(draggedLink){const target=event.target.closest('[data-link]')?.dataset.link;const sourceLink=links.find(link=>String(link.id)===draggedLink),targetLink=links.find(link=>String(link.id)===target);if(!target||target===draggedLink||!sourceLink||!targetLink||sourceLink.category!==targetLink.category)return;const from=links.findIndex(link=>String(link.id)===draggedLink),to=links.findIndex(link=>String(link.id)===target);const [moved]=links.splice(from,1);links.splice(to,0,moved);draggedLink=null;save();render();return}const target=event.target.closest('[data-panel]')?.dataset.panel;if(!target||target===draggedPanel)return;const from=categoryOrder.indexOf(draggedPanel),to=categoryOrder.indexOf(target);categoryOrder.splice(from,1);categoryOrder.splice(to,0,draggedPanel);localStorage.setItem('twlf-category-order',JSON.stringify(categoryOrder));draggedPanel=null;render()});
-document.querySelector('#content').addEventListener('dragend',()=>{draggedPanel=null;draggedLink=null;document.querySelectorAll('[data-panel],[data-link]').forEach(item=>item.classList.remove('dragging','drag-target','card-drag-target'))});
+let draggedPanel=null,draggedLink=null,draggedContext=null;
+document.querySelector('#content').addEventListener('dragstart',event=>{const card=event.target.closest('[data-link]');if(card&&event.target.closest('.card-drag')){draggedLink=card.dataset.link;draggedContext=card.dataset.context;card.classList.add('dragging');event.dataTransfer.effectAllowed='move';return}const panel=event.target.closest('[data-panel]');if(!panel||active!=='all'||panel.dataset.panel==='most-used')return;draggedPanel=panel.dataset.panel;panel.classList.add('dragging');event.dataTransfer.effectAllowed='move'});
+document.querySelector('#content').addEventListener('dragover',event=>{if(draggedLink){const target=event.target.closest('[data-link]');if(!target||target.dataset.context!==draggedContext)return;event.preventDefault();document.querySelectorAll('[data-link]').forEach(item=>item.classList.toggle('card-drag-target',item===target&&item.dataset.link!==draggedLink));return}if(!draggedPanel)return;const panel=event.target.closest('[data-panel]');if(!panel||panel.dataset.panel==='most-used')return;event.preventDefault();document.querySelectorAll('[data-panel]').forEach(item=>item.classList.toggle('drag-target',item===panel&&item.dataset.panel!==draggedPanel))});
+document.querySelector('#content').addEventListener('drop',event=>{event.preventDefault();if(draggedLink){const targetCard=event.target.closest('[data-link]'),target=targetCard?.dataset.link;if(!target||target===draggedLink||targetCard.dataset.context!==draggedContext)return;if(draggedContext==='most-used'){const current=matching('most-used').map(link=>String(link.id));const from=current.indexOf(draggedLink),to=current.indexOf(target);const [moved]=current.splice(from,1);current.splice(to,0,moved);mostUsedOrder=current;localStorage.setItem('twlf-most-used-order',JSON.stringify(mostUsedOrder))}else{const from=links.findIndex(link=>String(link.id)===draggedLink),to=links.findIndex(link=>String(link.id)===target);const [moved]=links.splice(from,1);links.splice(to,0,moved);save()}draggedLink=null;draggedContext=null;render();return}const target=event.target.closest('[data-panel]')?.dataset.panel;if(!target||target==='most-used'||target===draggedPanel)return;const from=categoryOrder.indexOf(draggedPanel),to=categoryOrder.indexOf(target);categoryOrder.splice(from,1);categoryOrder.splice(to,0,draggedPanel);categoryOrder=['most-used',...categoryOrder.filter(id=>id!=='most-used')];localStorage.setItem('twlf-category-order',JSON.stringify(categoryOrder));draggedPanel=null;render()});
+document.querySelector('#content').addEventListener('dragend',()=>{draggedPanel=null;draggedLink=null;draggedContext=null;document.querySelectorAll('[data-panel],[data-link]').forEach(item=>item.classList.remove('dragging','drag-target','card-drag-target'))});
