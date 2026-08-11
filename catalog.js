@@ -60,11 +60,15 @@ async function resolveList(displayName, columnMap) {
   const found = await graph(`/sites/${site.id}/lists?$select=id,displayName`);
   const match = (found.value || []).find(list => list.displayName === displayName);
   if (!match) throw new Error(`List "${displayName}" not found on ${SITE_PATH}.`);
-  const columns = await graph(`/sites/${site.id}/lists/${match.id}/columns?$select=name,displayName`);
+  const columns = await graph(`/sites/${site.id}/lists/${match.id}/columns?$select=name,displayName,readOnly`);
   const fields = {};
   for (const column of columns.value || []) {
     const key = columnMap[column.displayName];
-    if (key) fields[key] = column.name;
+    // Every list carries computed twins of Title — LinkTitle, LinkTitleNoMenu —
+    // that share its display name and reject writes. Take the writable one, and
+    // prefer a column whose internal name matches its display name exactly.
+    if (!key || column.readOnly) continue;
+    if (!fields[key] || column.name === column.displayName) fields[key] = column.name;
   }
   const missing = Object.values(columnMap).filter(key => !fields[key] && key !== 'description' && key !== 'logo' && key !== 'sortOrder');
   if (missing.length) throw new Error(`List "${displayName}" is missing columns: ${missing.join(', ')}.`);
