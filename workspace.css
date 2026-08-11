@@ -55,3 +55,7 @@
 .catalog-panel p{margin:0 0 10px!important;font-size:10px!important;color:var(--muted);line-height:1.5}
 .catalog-panel p.catalog-error{color:#a13c35}
 #seedCatalog[hidden]{display:none}
+/* A centred modal taller than the viewport gets clipped at both edges with no
+ * way to scroll to either. Let the modal scroll inside itself instead. */
+.modal{max-height:calc(100vh - 40px);overflow-y:auto}
+.modal-backdrop{align-items:safe center}
