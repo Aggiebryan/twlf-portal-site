@@ -21,7 +21,8 @@ let query = '';
 let editingId = null;
 let editingContext = null;
 
-const isPersonalLink = link => String(link?.id || '').startsWith('custom-');
+const isPersonalLink = link => !link?.itemId && String(link?.id || '').startsWith('custom-');
+const catalogWritable = () => window.twlfCatalog.writable();
 const categoryById = id => categories.find(category => category.id === id);
 const hostname = url => { try { return new URL(url).hostname.replace(/^www\./,''); } catch { return url; } };
 const officialLogoExtensions = {
@@ -45,6 +46,7 @@ function sizeFor(link, context) {
  * whenever the settings store swaps a local copy for the account's copy. */
 function adoptPrefs() {
   prefs = window.twlfPrefs.get();
+  catalog = window.twlfCatalog.get();
   categories = [mostUsedCategory, ...catalog.categories, ...(prefs.customCategories || [])];
   links = [...catalog.links, ...(prefs.customLinks || [])];
   mostUsed = (prefs.mostUsed || catalog.defaultMostUsed || []).map(String);
@@ -82,8 +84,9 @@ function linkCard(link, index, context) {
   const description=escapeHtml(link.description || `${sourceCategory?.name || 'Portal'} resource`);
   // A shared catalog link can be dropped from your own Most Used, but only a
   // personal link can be deleted outright — the catalog belongs to everyone.
-  const removable = context === 'most-used' || isPersonalLink(link);
-  const removeTitle = context==='most-used' ? 'Remove from Most Used' : 'Remove your link';
+  const removable = context === 'most-used' || isPersonalLink(link) || (link.itemId && catalogWritable());
+  const removeTitle = context==='most-used' ? 'Remove from Most Used'
+    : isPersonalLink(link) ? 'Remove your link' : 'Remove for the whole firm';
   return `<article class="link-card size-${size} ${context==='most-used'?'most-used-card':''}" data-link="${link.id}" data-context="${context}" style="--accent:${link.color};--source-color:${sourceCategory?.color||link.color};--delay:${Math.min(index,16)*18}ms">
     <button class="card-drag" draggable="true" aria-label="Move ${safeName}" title="Drag to reorder">⠿</button>
     ${removable?`<button class="remove" data-remove="${link.id}" data-remove-context="${context}" aria-label="Remove ${safeName}" title="${removeTitle}">×</button>`:''}
@@ -125,10 +128,18 @@ document.addEventListener('click', event => {
     event.preventDefault();
     const link=links.find(item=>String(item.id)===removeButton.dataset.remove);
     const fromMostUsed=removeButton.dataset.removeContext==='most-used';
-    if(link && window.confirm(fromMostUsed?`Remove “${link.name}” from your Most Used?`:`Remove “${link.name}” from your portal?`)){
-      if(fromMostUsed){mostUsed=mostUsed.filter(id=>id!==String(link.id))}
-      else if(isPersonalLink(link)){links=links.filter(item=>String(item.id)!==removeButton.dataset.remove)}
-      save();render();
+    const firmWide=!fromMostUsed&&!isPersonalLink(link)&&link?.itemId&&catalogWritable();
+    const question=fromMostUsed?`Remove “${link?.name}” from your Most Used?`
+      :firmWide?`Remove “${link?.name}” from the shared catalog? This removes it for everyone at the firm.`
+      :`Remove “${link?.name}” from your portal?`;
+    if(link && window.confirm(question)){
+      if(fromMostUsed){mostUsed=mostUsed.filter(id=>id!==String(link.id));save();render()}
+      else if(isPersonalLink(link)){links=links.filter(item=>String(item.id)!==removeButton.dataset.remove);save();render()}
+      else if(link.itemId&&catalogWritable()){
+        window.twlfCatalog.removeLink(link.itemId)
+          .then(()=>{notice(`“${link.name}” removed for the whole firm.`)})
+          .catch(error=>notice(`Could not remove the link: ${error.message}`,true));
+      }
     }
   }
   const editButton = event.target.closest('[data-edit]');
@@ -153,7 +164,7 @@ function setSharedFieldsEnabled(enabled) {
 function openModal(link=null,context=null){
   editingId=link?.id||null;editingContext=context;
   const form=document.querySelector('#form');form.reset();
-  const shared = Boolean(link) && !isPersonalLink(link);
+  const shared = Boolean(link) && !isPersonalLink(link) && !catalogWritable();
   document.querySelector('#modalTitle').textContent=link?'Edit portal link':'Add a portal link';
   document.querySelector('#modalIntro').textContent=link?'Its category card and Most Used card can have different sizes.':'Adds a link to your own portal. Firm-wide links are managed in the shared catalog.';
   document.querySelector('#saveLink').textContent=link?'Save changes':'Add link';
@@ -176,28 +187,35 @@ function populateCategorySelect(){document.querySelector('#categorySelect').inne
 function toggleMostUsedSize(){document.querySelector('#mostUsedSizeLabel').hidden=!document.querySelector('#form').elements.mostUsed.checked}
 document.querySelector('#form').elements.mostUsed.addEventListener('change',toggleMostUsedSize);
 
-document.querySelector('#form').addEventListener('submit',event=>{
+document.querySelector('#form').addEventListener('submit',async event=>{
   event.preventDefault();
   const data=Object.fromEntries(new FormData(event.target));
   const existing=editingId?links.find(link=>String(link.id)===String(editingId)):null;
-  const shared=existing&&!isPersonalLink(existing);
-  const id=existing?existing.id:`custom-${Date.now()}`;
-  if(!shared){
-    if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;
-    if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;
-    const category=categoryById(data.category);
-    const entry={id,name:data.name.trim(),url:data.url,logo:data.logo.trim(),description:data.description.trim(),category:data.category,color:category.color};
-    if(existing){links=links.map(link=>String(link.id)===String(id)?{...link,...entry}:link)}
-    else{links.push(entry)}
-  }
+  const writable=catalogWritable();
+  const personal=existing?isPersonalLink(existing):!writable;
+  const id=existing?existing.id:(writable?`s-${Date.now()}`:`custom-${Date.now()}`);
+  if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;
+  if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;
+  const category=categoryById(data.category);
+  const entry={id,name:data.name.trim(),url:data.url,logo:data.logo.trim(),description:data.description.trim(),category:data.category,color:category?.color||'#75808a'};
+
   // Size and Most Used are personal for every link, shared or not.
   sizes={...sizes,[id]:{category:data.size||'standard',mostUsed:data.mostUsedSize||data.size||'standard'}};
   const wanted=Boolean(data.mostUsed);
   if(wanted&&!isMostUsed(id))mostUsed=[...mostUsed,String(id)];
   if(!wanted)mostUsed=mostUsed.filter(item=>item!==String(id));
-  save();event.target.reset();closeModal();
-  document.querySelector('#notice').innerHTML=`<div class="notice">${existing?'Link updated':'Link added to your portal'}.<button aria-label="Dismiss">×</button></div>`;
-  render();
+
+  try{
+    if(personal){
+      if(existing){links=links.map(link=>String(link.id)===String(id)?{...link,...entry}:link)}else{links.push(entry)}
+      save();render();notice(existing?'Link updated.':'Link added to your portal.');
+    }else if(existing){
+      save();await window.twlfCatalog.updateLink(existing.itemId,entry);notice(`“${entry.name}” updated for the whole firm.`);
+    }else{
+      save();await window.twlfCatalog.addLink(entry);notice(`“${entry.name}” added for the whole firm.`);
+    }
+  }catch(error){notice(`Saved your settings, but the shared catalog could not be updated: ${error.message}`,true)}
+  event.target.reset();closeModal();
 });
 
 document.querySelector('#theme').addEventListener('click',()=>{applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');save()});
@@ -214,15 +232,23 @@ document.querySelector('#settings').addEventListener('click',()=>{settingsBackdr
 document.querySelector('#settingsClose').addEventListener('click',()=>{settingsBackdrop.hidden=true});
 settingsBackdrop.addEventListener('click',event=>{if(event.target===settingsBackdrop)settingsBackdrop.hidden=true});
 columnsInput.addEventListener('input',event=>{displayColumns=Number(event.target.value);document.querySelector('#columnCount').value=displayColumns;save();render()});
-document.querySelector('#categoryForm').addEventListener('submit',event=>{
+document.querySelector('#categoryForm').addEventListener('submit',async event=>{
   event.preventDefault();
   const data=Object.fromEntries(new FormData(event.target));
-  const category={id:`custom-category-${Date.now()}`,name:data.name.trim(),color:data.color};
-  prefs.customCategories=[...(prefs.customCategories||[]),category];
-  categories.push(category);categoryOrder.push(category.id);
-  save();populateCategorySelect();event.target.reset();event.target.elements.color.value='#287b67';
-  document.querySelector('#notice').innerHTML=`<div class="notice">${escapeHtml(category.name)} category added to your portal.<button aria-label="Dismiss">×</button></div>`;
-  render();
+  const writable=catalogWritable();
+  const category={id:writable?`c-${Date.now()}`:`custom-category-${Date.now()}`,name:data.name.trim(),color:data.color};
+  event.target.reset();event.target.elements.color.value='#287b67';
+  try{
+    if(writable){
+      await window.twlfCatalog.addCategory({...category,sortOrder:categories.length});
+      notice(`${category.name} category added for the whole firm.`);
+    }else{
+      prefs.customCategories=[...(prefs.customCategories||[]),category];
+      categories.push(category);categoryOrder.push(category.id);
+      save();populateCategorySelect();render();
+      notice(`${category.name} category added to your portal.`);
+    }
+  }catch(error){notice(`The category could not be added: ${error.message}`,true)}
 });
 
 /* Modules are opt-in per user. More will register themselves here later. */
@@ -241,6 +267,7 @@ document.addEventListener('change',event=>{
   save();applyModules();
 });
 
+function notice(message,isError){document.querySelector('#notice').innerHTML=`<div class="notice${isError?' auth-error':''}">${escapeHtml(message)}<button aria-label="Dismiss">×</button></div>`}
 function showAuthError(error){const message=error?.errorMessage||error?.message||'Microsoft sign-in could not be completed.';document.querySelector('#notice').innerHTML=`<div class="notice auth-error">${escapeHtml(message)}<button aria-label="Dismiss">×</button></div>`}
 function updateAccountUI(){
   const account=window.twlfAuth.getAccount();
@@ -291,14 +318,36 @@ document.querySelector('#content').addEventListener('drop',event=>{
 });
 document.querySelector('#content').addEventListener('dragend',()=>{draggedPanel=null;draggedLink=null;draggedContext=null;document.querySelectorAll('[data-panel],[data-link]').forEach(item=>item.classList.remove('dragging','drag-target','card-drag-target'))});
 
+function updateCatalogUI(){
+  const status=document.querySelector('#catalogStatus'),seedButton=document.querySelector('#seedCatalog');
+  if(!status)return;
+  const source=window.twlfCatalog.source(),error=window.twlfCatalog.error();
+  const text={
+    sharepoint:`Shared catalog: ${catalog.links.length} links from SharePoint. Anything you add here is added for the whole firm.`,
+    empty:'The SharePoint lists are connected but empty. Load the firm catalog into them to start sharing.',
+    bundled:window.twlfAuth.getAccount()
+      ?`Shared catalog unavailable, showing the built-in copy${error?` (${error.message})`:''}. Links you add are yours only.`
+      :'Signed out — showing the built-in catalog. Sign in to see and edit the firm catalog.',
+  }[source]||'';
+  status.textContent=text;
+  status.classList.toggle('catalog-error',source==='bundled'&&Boolean(error));
+  if(seedButton)seedButton.hidden=source!=='empty';
+}
+document.addEventListener('click',async event=>{
+  if(!event.target.closest('#seedCatalog'))return;
+  const button=document.querySelector('#seedCatalog');
+  if(!window.confirm('Load all firm links and categories into the SharePoint lists? Do this once.'))return;
+  button.disabled=true;
+  try{
+    const total=await window.twlfCatalog.seed((done,count)=>{button.textContent=`Loading ${done}/${count}…`});
+    notice(`Loaded ${total} records into the shared catalog.`);
+  }catch(error){notice(`Seeding stopped: ${error.message}`,true)}
+  button.disabled=false;button.textContent='Load firm catalog into SharePoint';
+  updateCatalogUI();
+});
+
 async function boot() {
-  try {
-    const response = await fetch(`links.json?v=${document.documentElement.dataset.assets || '1'}`);
-    if (!response.ok) throw new Error(`links.json (${response.status})`);
-    catalog = await response.json();
-  } catch (error) {
-    document.querySelector('#notice').innerHTML=`<div class="notice auth-error">The shared link catalog could not be loaded (${escapeHtml(error.message)}).<button aria-label="Dismiss">×</button></div>`;
-  }
+  await window.twlfCatalog.load();
   await window.twlfPrefs.ready.catch(()=>null);
   adoptPrefs();
   columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
@@ -306,6 +355,12 @@ async function boot() {
   document.querySelector('#reset').hidden=false;
   // When the account's settings arrive after a redirect sign-in, re-adopt.
   window.twlfPrefs.onChange(()=>{adoptPrefs();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;applyModules();populateCategorySelect();render();updateAccountUI()});
-  window.twlfAuth.ready.then(async()=>{await window.twlfPrefs.adoptAfterSignIn();updateAccountUI()}).catch(showAuthError);
+  window.twlfCatalog.onChange(()=>{adoptPrefs();populateCategorySelect();render();updateCatalogUI()});
+  updateCatalogUI();
+  window.twlfAuth.ready.then(async()=>{
+    await window.twlfPrefs.adoptAfterSignIn();
+    await window.twlfCatalog.sync();
+    updateAccountUI();updateCatalogUI();
+  }).catch(showAuthError);
 }
 boot();
