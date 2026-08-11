@@ -39,3 +39,5 @@
 .link-card.size-standard .link-copy strong{line-height:1.18;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .link-card.size-standard .link-copy small{line-height:1.2}
 .link-card.size-standard .link-copy{gap:2px}
+/* The initials are a stand-in for a missing logo, not a backdrop for one. */
+.logo.has-logo .fallback{display:none}

@@ -7,8 +7,10 @@ const microsoftAuth = new msal.PublicClientApplication({
     navigateToLoginRequestUrl: false,
   },
   cache: {
-    cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
+    // localStorage, not sessionStorage: the session must outlive the tab so the
+    // user stays signed in across restarts until they explicitly sign out.
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: true,
   },
 });
 const portalGraphScopes = ['User.Read', 'Calendars.Read', 'Mail.ReadBasic'];

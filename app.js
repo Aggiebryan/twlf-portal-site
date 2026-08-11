@@ -52,7 +52,7 @@ function linkCard(link, index, context) {
     <button class="remove" data-remove="${link.id}" data-remove-context="${context}" aria-label="Remove ${safeName}" title="${context==='most-used'?'Remove from Most Used':'Remove link'}">×</button>
     <button class="edit" data-edit="${link.id}" data-edit-context="${context}" aria-label="Edit ${safeName}" title="Edit link and logo">✎</button>
     <a href="${safeUrl}" target="_blank" rel="noreferrer">
-      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || logo(link.url))}" alt="" onerror="this.style.display='none'"></span>
+      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || logo(link.url))}" alt="" onerror="this.style.display='none'" onload="if(this.naturalWidth)this.parentNode.classList.add('has-logo')"></span>
       <span class="link-copy"><strong>${safeName}</strong><small class="link-address">${safeHost}</small><small class="description">${description}</small></span><span class="open">↗</span>
     </a></article>`;
 }
