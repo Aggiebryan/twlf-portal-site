@@ -35,6 +35,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store, must-revalidate")
         super().end_headers()
 
+    def handle_one_request(self):
+        # Edge and Chrome quietly upgrade localhost to https and remember it.
+        # The TLS handshake against this plain HTTP server would otherwise show
+        # up as pages of binary garbage and a stale-looking page.
+        try:
+            peek = self.rfile.peek(3)
+        except Exception:
+            peek = b""
+        if peek.startswith(b"\x16\x03"):
+            print(
+                f"\n  A browser tried to reach this server over HTTPS.\n"
+                f"  This is a plain HTTP dev server: open http://localhost:{PORT}\n"
+                f"  and type the http:// prefix so the browser stops upgrading.\n"
+            )
+            self.close_connection = True
+            return
+        super().handle_one_request()
+
 
 class Server(socketserver.TCPServer):
     allow_reuse_address = True
