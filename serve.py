@@ -55,7 +55,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 class Server(socketserver.TCPServer):
-    allow_reuse_address = True
+    # On Windows SO_REUSEADDR lets a second process bind a port that is already
+    # listening, and the OS hands new connections to whichever socket it likes.
+    # A stale server can then silently shadow this one and serve older files.
+    # Off Windows it only clears TIME_WAIT, which is what we actually want.
+    allow_reuse_address = os.name != "nt"
 
 
 if __name__ == "__main__":
