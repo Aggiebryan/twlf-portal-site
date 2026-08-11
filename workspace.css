@@ -41,3 +41,12 @@
 .link-card.size-standard .link-copy{gap:2px}
 /* The initials are a stand-in for a missing logo, not a backdrop for one. */
 .logo.has-logo .fallback{display:none}
+/* Per-user module visibility and shared-vs-personal affordances in the modal. */
+.module-microsoft365-off .activity-sidebar{display:none}
+.module-microsoft365-off .portal-layout{grid-template-columns:minmax(0,1fr)}
+.module-list{padding:15px 0;border-top:1px solid var(--line);margin-top:15px}
+.module-list>strong{display:block;font-size:12px;margin-bottom:9px}
+.shared-note{margin:0 0 16px!important;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--hover);color:var(--muted);font-size:10px!important;line-height:1.45}
+.shared-note[hidden]{display:none}
+.locked-field{opacity:.55}
+.locked-field input,.locked-field select,.locked-field textarea{cursor:not-allowed}

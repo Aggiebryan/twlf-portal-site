@@ -1,0 +1,576 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "govt",
+      "name": "Government Offices/Courts",
+      "color": "#8f405d"
+    },
+    {
+      "id": "twlf",
+      "name": "TWLF Pages",
+      "color": "#287b67"
+    },
+    {
+      "id": "reference",
+      "name": "Reference",
+      "color": "#b88524"
+    },
+    {
+      "id": "state-bar",
+      "name": "State Bar",
+      "color": "#a33c35"
+    },
+    {
+      "id": "ai",
+      "name": "AI Tools",
+      "color": "#6656a5"
+    },
+    {
+      "id": "associations",
+      "name": "Associations",
+      "color": "#267b7d"
+    }
+  ],
+  "defaultMostUsed": [
+    "t1",
+    "t2",
+    "t3",
+    "t4",
+    "t5",
+    "t6",
+    "t7",
+    "t8",
+    "t9",
+    "t10",
+    "t11",
+    "t12"
+  ],
+  "links": [
+    {
+      "id": "t1",
+      "name": "Clio",
+      "url": "https://account.clio.com/",
+      "category": "twlf",
+      "color": "#0B70CE"
+    },
+    {
+      "id": "t2",
+      "name": "Box",
+      "url": "https://app.box.com/folder/0",
+      "category": "twlf",
+      "color": "#0061D5"
+    },
+    {
+      "id": "t3",
+      "name": "eFile Texas",
+      "url": "https://www.efiletexas.gov/",
+      "category": "govt",
+      "color": "#1C3A5F"
+    },
+    {
+      "id": "t4",
+      "name": "Proof",
+      "url": "https://app.proofserve.com/",
+      "category": "twlf",
+      "color": "#27AE60"
+    },
+    {
+      "id": "t5",
+      "name": "WestLaw",
+      "url": "https://lawschool.thomsonreuters.com/",
+      "category": "reference",
+      "color": "#E87722"
+    },
+    {
+      "id": "t6",
+      "name": "LexisNexis",
+      "url": "https://plusai.lexis.com/",
+      "category": "reference",
+      "color": "#D0232A"
+    },
+    {
+      "id": "t7",
+      "name": "Letterstream",
+      "url": "https://www.letterstream.com/",
+      "category": "twlf",
+      "color": "#2980B9"
+    },
+    {
+      "id": "t8",
+      "name": "Public Data",
+      "url": "https://www.publicdata.com/",
+      "category": "reference",
+      "color": "#6C3483"
+    },
+    {
+      "id": "t9",
+      "name": "eFile Texas (Old)",
+      "url": "https://texas.tylertech.cloud/OfsWeb",
+      "category": "govt",
+      "color": "#5D6D7E"
+    },
+    {
+      "id": "t10",
+      "name": "re:SearchTX",
+      "url": "https://research.txcourts.gov/CourtRecordsSearch/#!/dashboard",
+      "category": "govt",
+      "color": "#1A5276"
+    },
+    {
+      "id": "t11",
+      "name": "CRIS Purchase",
+      "url": "https://cris.dot.state.tx.us/public/Purchase/app/home",
+      "category": "govt",
+      "color": "#117A65"
+    },
+    {
+      "id": "t12",
+      "name": "Houston Public Records",
+      "url": "https://houstontx.govqa.us/WEBAPP/_rs/(S(x1znyclu25l1jq31hgycgwrs))/SupportHome.aspx",
+      "category": "govt",
+      "color": "#C0392B"
+    },
+    {
+      "id": "t13",
+      "name": "MoCo District Clerk",
+      "url": "https://www.mctx.org/departments/departments_d_-_f/district_clerk/index.php",
+      "category": "govt",
+      "color": "#8B1A4A"
+    },
+    {
+      "id": "t14",
+      "name": "MoCo Odyssey",
+      "url": "https://odyssey.mctx.org/Secured/Login.aspx",
+      "category": "govt",
+      "color": "#A93226"
+    },
+    {
+      "id": "t15",
+      "name": "HC District Clerk",
+      "url": "https://www.hcdistrictclerk.com/Common/Default.aspx",
+      "category": "govt",
+      "color": "#6C3483"
+    },
+    {
+      "id": "t16",
+      "name": "HC County Clerk",
+      "url": "https://cclerk.hctx.net/",
+      "category": "govt",
+      "color": "#1C2833"
+    },
+    {
+      "id": "t17",
+      "name": "Secretary of State",
+      "url": "https://www.sos.state.tx.us/corp/sosda/index.shtml",
+      "category": "govt",
+      "color": "#148F77"
+    },
+    {
+      "id": "t18",
+      "name": "PACER",
+      "url": "https://pacer.login.uscourts.gov/csologin/login.jsf",
+      "category": "govt",
+      "color": "#21618C"
+    },
+    {
+      "id": "t19",
+      "name": "Harris JP Public",
+      "url": "http://www.jp.hctx.net/#gsc.tab=0",
+      "category": "govt",
+      "color": "#CA6F1E"
+    },
+    {
+      "id": "t20",
+      "name": "Harris JP Odyssey",
+      "url": "https://jpodysseyportal.harriscountytx.gov/OdysseyPortalJP",
+      "category": "govt",
+      "color": "#AF601A"
+    },
+    {
+      "id": "t21",
+      "name": "Jefferson Co Clerk",
+      "url": "https://co.jefferson.tx.us/dclerk/index.html",
+      "category": "govt",
+      "color": "#117A65"
+    },
+    {
+      "id": "t22",
+      "name": "Harris Probate",
+      "url": "https://www.cclerk.hctx.net/applications/websearch/CourtSearch.aspx?CaseType=Probate",
+      "category": "govt",
+      "color": "#7D3C98"
+    },
+    {
+      "id": "t23",
+      "name": "MoCo County Clerk",
+      "url": "https://countyfusion1.kofiletech.us/countyweb/loginDisplay.action?countyname=MontgomeryTX",
+      "category": "govt",
+      "color": "#C0392B"
+    },
+    {
+      "id": "t24",
+      "name": "Galveston Clerk",
+      "url": "https://www.galvestoncountytx.gov/our-county/district-clerk",
+      "category": "govt",
+      "color": "#2471A3"
+    },
+    {
+      "id": "t25",
+      "name": "MoCo County Odyssey",
+      "url": "https://odyssey.mctx.org/County/default.aspx",
+      "category": "govt",
+      "color": "#D4AC0D"
+    },
+    {
+      "id": "t26",
+      "name": "Estate Site",
+      "url": "https://woodlandslawestate.com",
+      "category": "twlf",
+      "color": "#1E8449"
+    },
+    {
+      "id": "t27",
+      "name": "Woodlands Law",
+      "url": "https://Woodlands.law",
+      "category": "twlf",
+      "color": "#196F3D"
+    },
+    {
+      "id": "t28",
+      "name": "WordPress",
+      "url": "https://woodlandslaw.info/wp/",
+      "category": "twlf",
+      "color": "#21759B"
+    },
+    {
+      "id": "t29",
+      "name": "N8N",
+      "url": "https://n8n.twlf.dev/",
+      "category": "twlf",
+      "color": "#EA4B71"
+    },
+    {
+      "id": "t30",
+      "name": "Cal.com",
+      "url": "https://app.cal.com/",
+      "category": "twlf",
+      "color": "#292929"
+    },
+    {
+      "id": "t31",
+      "name": "Phone Intake",
+      "url": "https://intake.twlf.dev",
+      "category": "twlf",
+      "color": "#27AE60"
+    },
+    {
+      "id": "t32",
+      "name": "TexasLawHelp",
+      "url": "https://texaslawhelp.org/",
+      "category": "reference",
+      "color": "#D4A017"
+    },
+    {
+      "id": "t33",
+      "name": "TX Free Legal Answers",
+      "url": "https://texas.freelegalanswers.org/",
+      "category": "reference",
+      "color": "#2471A3"
+    },
+    {
+      "id": "t34",
+      "name": "Pre-Judgment Calc",
+      "url": "http://www.csgnetwork.com/interestloancalc.html",
+      "category": "reference",
+      "color": "#CA6F1E"
+    },
+    {
+      "id": "t35",
+      "name": "Post-Judgment Calc",
+      "url": "https://www.webwinder.com/calculators/post_judge_calc.html",
+      "category": "reference",
+      "color": "#C0392B"
+    },
+    {
+      "id": "t36",
+      "name": "Houston Incidents",
+      "url": "https://dmwilson.info/",
+      "category": "reference",
+      "color": "#922B21"
+    },
+    {
+      "id": "t37",
+      "name": "Debt Collector Lookup",
+      "url": "https://direct.sos.state.tx.us/debtcollectors/DCSearch.asp",
+      "category": "reference",
+      "color": "#6C3483"
+    },
+    {
+      "id": "t38",
+      "name": "Date Calculator",
+      "url": "https://www.timeanddate.com/date/duration.html",
+      "category": "reference",
+      "color": "#1C2833"
+    },
+    {
+      "id": "t39",
+      "name": "SCRA",
+      "url": "https://scra.dmdc.osd.mil/scra/#/login",
+      "category": "reference",
+      "color": "#148F77"
+    },
+    {
+      "id": "t40",
+      "name": "STCL Clinic",
+      "url": "https://www.stcl.edu/academics/legal-clinics/request-legal-assistance/",
+      "category": "reference",
+      "color": "#7D3C98"
+    },
+    {
+      "id": "t41",
+      "name": "Bloomberg Law",
+      "url": "https://news.bloomberglaw.com/",
+      "category": "reference",
+      "color": "#1A5276"
+    },
+    {
+      "id": "t42",
+      "name": "Checkpoint",
+      "url": "https://checkpoint.riag.com/app/login",
+      "category": "reference",
+      "color": "#1E8449"
+    },
+    {
+      "id": "t43",
+      "name": "Court Deadlines",
+      "url": "https://courtdeadlines.com/",
+      "category": "reference",
+      "color": "#C0392B"
+    },
+    {
+      "id": "t44",
+      "name": "Clio University",
+      "url": "https://cliouniversity.learnupon.com/dashboard",
+      "category": "reference",
+      "color": "#0B70CE"
+    },
+    {
+      "id": "t45",
+      "name": "ChatGPT",
+      "url": "https://chat.openai.com/",
+      "category": "ai",
+      "color": "#10A37F"
+    },
+    {
+      "id": "t46",
+      "name": "Gemini",
+      "url": "https://deepmind.google/technologies/gemini/",
+      "category": "ai",
+      "color": "#4285F4"
+    },
+    {
+      "id": "t47",
+      "name": "Claude",
+      "url": "https://claude.ai/new",
+      "category": "ai",
+      "color": "#D97757"
+    },
+    {
+      "id": "t48",
+      "name": "Grammarly",
+      "url": "https://app.grammarly.com/",
+      "category": "ai",
+      "color": "#15C39A"
+    },
+    {
+      "id": "t49",
+      "name": "GroqChat",
+      "url": "https://chat.groq.com/",
+      "category": "ai",
+      "color": "#F55036"
+    },
+    {
+      "id": "t50",
+      "name": "QuillBot",
+      "url": "https://quillbot.com",
+      "category": "ai",
+      "color": "#499557"
+    },
+    {
+      "id": "t51",
+      "name": "WLF-AI",
+      "url": "https://wlf-ai.com/",
+      "category": "ai",
+      "color": "#7D3C98"
+    },
+    {
+      "id": "t52",
+      "name": "N8N Auto",
+      "url": "https://n8n.twlf.dev/",
+      "category": "ai",
+      "color": "#EA4B71"
+    },
+    {
+      "id": "t53",
+      "name": "Prompt Library",
+      "url": "https://docs.anthropic.com/en/resources/prompt-library/library",
+      "category": "ai",
+      "color": "#D97757"
+    },
+    {
+      "id": "t54",
+      "name": "Perplexity",
+      "url": "https://www.perplexity.ai/",
+      "category": "ai",
+      "color": "#1FB8CD"
+    },
+    {
+      "id": "t55",
+      "name": "NotebookLM",
+      "url": "https://notebooklm.google.com/",
+      "category": "ai",
+      "color": "#FBBC04"
+    },
+    {
+      "id": "t56",
+      "name": "GPT Prompts",
+      "url": "https://academy.openai.com/public/clubs/work-users-ynjqu/resources/chatgpt-for-any-role",
+      "category": "ai",
+      "color": "#10A37F"
+    },
+    {
+      "id": "t57",
+      "name": "PimEyes",
+      "url": "https://pimeyes.com/en",
+      "category": "ai",
+      "color": "#CA6F1E"
+    },
+    {
+      "id": "t58",
+      "name": "Fathom",
+      "url": "https://fathom.video/",
+      "category": "ai",
+      "color": "#7C3AED"
+    },
+    {
+      "id": "t59",
+      "name": "Spellbook",
+      "url": "https://www.spellbook.legal/",
+      "category": "ai",
+      "color": "#6366F1"
+    },
+    {
+      "id": "t60",
+      "name": "EvenUp",
+      "url": "https://www.evenuplaw.com/",
+      "category": "ai",
+      "color": "#2563EB"
+    },
+    {
+      "id": "t61",
+      "name": "DISCO",
+      "url": "https://csdisco.com/",
+      "category": "ai",
+      "color": "#06B6D4"
+    },
+    {
+      "id": "t62",
+      "name": "Pre-dicta",
+      "url": "https://www.pre-dicta.com/",
+      "category": "ai",
+      "color": "#14B8A6"
+    },
+    {
+      "id": "t63",
+      "name": "SlidesAI",
+      "url": "https://www.slidesai.io/",
+      "category": "ai",
+      "color": "#F59E0B"
+    },
+    {
+      "id": "t64",
+      "name": "Beautiful.ai",
+      "url": "https://www.beautiful.ai/",
+      "category": "ai",
+      "color": "#EC4899"
+    },
+    {
+      "id": "t72",
+      "name": "Bar Benefits",
+      "url": "https://texasbar.memberbenefits.com/",
+      "category": "state-bar",
+      "color": "#C0392B"
+    },
+    {
+      "id": "t73",
+      "name": "State Bar of TX",
+      "url": "https://www.texasbar.com/AM/Template.cfm?Section=Lawyers_Home",
+      "category": "state-bar",
+      "color": "#922B21"
+    },
+    {
+      "id": "t74",
+      "name": "LRIS",
+      "url": "https://www.texasbar.com/AM/Template.cfm?Section=Join_or_Manage_Your_LRIS_Account",
+      "category": "state-bar",
+      "color": "#CA6F1E"
+    },
+    {
+      "id": "t75",
+      "name": "TX Bar Careers",
+      "url": "https://l.tx.bar.associationcareernetwork.com/",
+      "category": "state-bar",
+      "color": "#2471A3"
+    },
+    {
+      "id": "t76",
+      "name": "TLAP",
+      "url": "https://www.tlaphelps.org/",
+      "category": "state-bar",
+      "color": "#27AE60"
+    },
+    {
+      "id": "t77",
+      "name": "TexasBarCLE",
+      "url": "http://www.texasbarcle.com/CLE/Home.asp",
+      "category": "state-bar",
+      "color": "#7D3C98"
+    },
+    {
+      "id": "t78",
+      "name": "TX Bar Practice",
+      "url": "https://www.texasbarpractice.com/",
+      "category": "state-bar",
+      "color": "#D4A017"
+    },
+    {
+      "id": "t79",
+      "name": "Houston Bar",
+      "url": "https://www.hba.org/?pg=myhba",
+      "category": "associations",
+      "color": "#148F77"
+    },
+    {
+      "id": "t80",
+      "name": "Woodlands Bar",
+      "url": "https://www.woodlandsbarassociation.com/",
+      "category": "associations",
+      "color": "#1E8449"
+    },
+    {
+      "id": "t81",
+      "name": "Federalist Society",
+      "url": "https://fedsoc.org/",
+      "category": "associations",
+      "color": "#1C2833"
+    },
+    {
+      "id": "t82",
+      "name": "MoCo Bar Assoc",
+      "url": "https://mcbatx.com/",
+      "category": "associations",
+      "color": "#117A65"
+    }
+  ]
+}

@@ -6,8 +6,8 @@
   <title>TWLF Work Portal</title>
   <meta name="description" content="The Woodlands Law Firm work portal">
   <link rel="icon" href="favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260811.2">
-  <link rel="stylesheet" href="workspace.css?v=20260811.2">
+  <link rel="stylesheet" href="styles.css?v=20260811.3">
+  <link rel="stylesheet" href="workspace.css?v=20260811.3">
 </head>
 <body>
   <header class="topbar">
@@ -44,6 +44,7 @@
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button class="close" id="close" aria-label="Close">×</button>
       <h2 id="modalTitle">Add a portal link</h2><p id="modalIntro">Add a destination to this browser’s TWLF portal.</p>
+      <p class="shared-note" id="sharedNote" hidden>This is a firm-wide link, so its name, address and category are the same for everyone. Card size and Most Used are yours alone.</p>
       <form id="form">
         <label>NAME<input name="name" placeholder="e.g. Benefits Portal" required maxlength="60"></label>
         <label>WEB ADDRESS<input name="url" placeholder="https://portal.example.com" required inputmode="url"></label>
@@ -63,14 +64,16 @@
       <button class="close" id="settingsClose" aria-label="Close">×</button>
       <h2 id="settingsTitle">Portal settings</h2><p>Adjust how much fits across your workspace.</p>
       <label class="range-label">DISPLAY COLUMNS <output id="columnCount">2</output><input id="columns" type="range" min="1" max="4" step="1" value="2"></label>
+      <div class="module-list"><strong>Modules</strong><label class="check-label"><input type="checkbox" data-module="microsoft365" checked> MICROSOFT 365 ACTIVITY</label></div>
       <form id="categoryForm" class="category-form"><strong>Add a category</strong><div><input name="name" placeholder="Category name" required maxlength="40"><input name="color" type="color" value="#287b67" aria-label="Category color"><button class="save">Add</button></div></form>
       <div class="account-panel"><div><strong id="accountName">Your portal</strong><p id="accountStatus">Not signed in</p></div><button class="account-button" id="settingsAccount">Sign in</button></div>
       <p class="sync-note">Sign in with your woodlands.law Microsoft 365 account. Portal preferences are currently saved on this device.</p>
     </section>
   </div>
   <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js" defer></script>
-  <script src="auth.js?v=20260811.2" defer></script>
-  <script src="app.js?v=20260811.2" defer></script>
-  <script src="modules.js?v=20260811.2" defer></script>
+  <script src="auth.js?v=20260811.3" defer></script>
+  <script src="settings.js?v=20260811.3" defer></script>
+  <script src="app.js?v=20260811.3" defer></script>
+  <script src="modules.js?v=20260811.3" defer></script>
 </body>
 </html>

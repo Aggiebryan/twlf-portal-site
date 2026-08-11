@@ -22,6 +22,8 @@ const dayLabel = date => new Intl.DateTimeFormat(undefined, { weekday: 'short', 
 const timeLabel = date => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
 const messageTime = date => new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
 
+const moduleEnabled = () => window.twlfModuleState?.microsoft365 !== false;
+
 function setModuleLoading() {
   activity.refresh.classList.add('spinning');
   activity.calendar.innerHTML = '<div class="activity-empty">Loading calendar…</div>';
@@ -84,6 +86,8 @@ async function refreshActivity() {
 
 activity.refresh.addEventListener('click', refreshActivity);
 activity.signIn.addEventListener('click', () => window.twlfAuth.signIn());
-window.twlfAuth.ready.then(refreshActivity);
+window.twlfAuth.ready.then(() => { if (moduleEnabled()) refreshActivity(); });
+// Re-run when the user switches the module back on.
+document.addEventListener('twlf:modules', event => { if (event.detail?.microsoft365 !== false) refreshActivity(); });
 setInterval(() => { if (!document.hidden) refreshActivity(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshActivity(); });
