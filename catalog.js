@@ -22,7 +22,11 @@ const GRAPH = 'https://graph.microsoft.com/v1.0';
 const LINK_COLUMNS = {
   Title: 'name', LinkId: 'id', LinkUrl: 'url', LinkCategory: 'category',
   LinkColor: 'color', LinkDescription: 'description', LinkLogo: 'logo',
+  HeroGroup: 'heroGroup',
 };
+/* Columns the site works without. HeroGroup is here so a tenant that has not
+ * added it yet still loads, just without firm-wide hero membership. */
+const OPTIONAL_COLUMNS = new Set(['description', 'logo', 'sortOrder', 'heroGroup']);
 const CATEGORY_COLUMNS = {
   Title: 'name', CategoryId: 'id', CategoryColor: 'color', SortOrder: 'sortOrder',
 };
@@ -70,7 +74,7 @@ async function resolveList(displayName, columnMap) {
     if (!key || column.readOnly) continue;
     if (!fields[key] || column.name === column.displayName) fields[key] = column.name;
   }
-  const missing = Object.values(columnMap).filter(key => !fields[key] && key !== 'description' && key !== 'logo' && key !== 'sortOrder');
+  const missing = Object.values(columnMap).filter(key => !fields[key] && !OPTIONAL_COLUMNS.has(key));
   if (missing.length) throw new Error(`List "${displayName}" is missing columns: ${missing.join(', ')}.`);
   return { id: match.id, fields };
 }
@@ -89,7 +93,7 @@ const toFields = (record, list, keys) => keys.reduce((fields, key) => {
   return fields;
 }, {});
 
-const LINK_KEYS = ['name','id','url','category','color','description','logo'];
+const LINK_KEYS = ['name','id','url','category','color','description','logo','heroGroup'];
 const CATEGORY_KEYS = ['name','id','color','sortOrder'];
 
 async function pull() {
@@ -140,11 +144,30 @@ window.twlfCatalog = {
     return created;
   },
 
-  async updateLink(itemId, patch) {
+  async updateLink(itemId, patch, { quiet = false } = {}) {
+    const fields = toFields(patch, lists.links, LINK_KEYS);
+    // An empty heroGroup means "no card", which toFields would otherwise drop.
+    if (patch.heroGroup === '' && lists.links.fields.heroGroup) fields[lists.links.fields.heroGroup] = '';
     await graph(`/sites/${site.id}/lists/${lists.links.id}/items/${itemId}/fields`, {
-      method: 'PATCH', body: JSON.stringify(toFields(patch, lists.links, LINK_KEYS)),
+      method: 'PATCH', body: JSON.stringify(fields),
     });
+    if (!quiet) await this.sync();
+  },
+
+  hasHeroColumn: () => Boolean(lists.links && lists.links.fields.heroGroup),
+
+  /* Write the current hero membership to the list so it is the same for
+   * everyone. Sequential: SharePoint throttles bursts and this runs rarely. */
+  async publishHeroGroups(assignments, onProgress) {
+    if (!lists.links?.fields?.heroGroup) throw new Error('The Portal Links list has no HeroGroup column yet.');
+    const entries = Object.entries(assignments);
+    let done = 0;
+    for (const [itemId, group] of entries) {
+      await this.updateLink(itemId, { heroGroup: group }, { quiet: true });
+      onProgress?.(++done, entries.length);
+    }
     await this.sync();
+    return entries.length;
   },
 
   async removeLink(itemId) {

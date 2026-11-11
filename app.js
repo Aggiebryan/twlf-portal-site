@@ -27,7 +27,10 @@ const HERO_DEFAULTS = {
 };
 const HERO_SEED = { court: COURT_LINKS, woodlands: WOODLANDS_LAW };
 const heroKeys = () => Object.keys(HERO_DEFAULTS);
-const heroMembers = key => ((prefs.heroMembers || {})[key] || HERO_SEED[key] || []).map(String);
+const catalogHeroInUse = () => links.some(link => link.heroGroup);
+const heroMembers = key => (catalogHeroInUse()
+  ? links.filter(link => link.heroGroup === key).map(link => String(link.id))
+  : ((prefs.heroMembers || {})[key] || HERO_SEED[key] || []).map(String));
 function setHeroMembership(id, key) {
   const members = { court: heroMembers('court'), woodlands: heroMembers('woodlands') };
   for (const k of Object.keys(members)) members[k] = members[k].filter(x => x !== String(id));
@@ -35,7 +38,11 @@ function setHeroMembership(id, key) {
   prefs.heroMembers = members;
   return members;
 }
-const heroGroupOf = id => heroKeys().find(k => k !== 'most-used' && heroMembers(k).includes(String(id))) || '';
+const heroGroupOf = id => {
+  const link = links.find(item => String(item.id) === String(id));
+  if (catalogHeroInUse()) return (link && link.heroGroup) || '';
+  return heroKeys().find(k => k !== 'most-used' && heroMembers(k).includes(String(id))) || '';
+};
 const heroStyle = key => ({ ...HERO_DEFAULTS[key], ...((prefs.heroGroups || {})[key] || {}) });
 const heroSlots = key => {
   const size = HERO_SIZES[heroStyle(key).size] || HERO_SIZES.medium;
@@ -187,6 +194,29 @@ function renderHeroSettings() {
   }).join('');
 }
 
+function updatePublishHero() {
+  const button = document.querySelector('#publishHero');
+  if (!button) return;
+  button.hidden = !(catalogWritable() && window.twlfCatalog.hasHeroColumn());
+}
+
+document.addEventListener('click', async event => {
+  if (!event.target.closest('#publishHero')) return;
+  const button = document.querySelector('#publishHero');
+  if (!window.confirm('Publish these hero cards to the whole firm? Everyone will see the same membership.')) return;
+  // Send every catalogue link, so links no longer in a card are cleared too.
+  const assignments = {};
+  for (const link of links) if (link.itemId) assignments[link.itemId] = heroGroupOf(link.id);
+  button.disabled = true;
+  try {
+    const n = await window.twlfCatalog.publishHeroGroups(assignments,
+      (done, total) => { button.textContent = `Publishing ${done}/${total}…`; });
+    notice(`Hero card membership published to the firm across ${n} links.`);
+  } catch (error) { notice(`Could not publish hero cards: ${error.message}`, true); }
+  button.disabled = false; button.textContent = 'Publish hero cards to the firm';
+  renderHero();
+});
+
 function updateHero(key, patch) {
   prefs.heroGroups = { ...(prefs.heroGroups || {}), [key]: { ...heroStyle(key), ...patch } };
   window.twlfPrefs.set({ heroGroups: prefs.heroGroups });
@@ -322,9 +352,12 @@ document.querySelector('#form').addEventListener('submit',async event=>{
   // personal half of this form must still work without them.
   const sharedLocked=Boolean(existing)&&!isPersonalLink(existing)&&!writable;
 
-  // Card size and hero membership are personal for every link, shared or not.
+  // Card size is always personal. Hero membership goes to SharePoint when the
+  // shared catalogue is writable, so the firm sees one set of cards.
   sizes={...sizes,[id]:{category:data.size||'standard'}};
-  setHeroMembership(id,data.heroGroup||'');
+  const group=data.heroGroup||'';
+  const toCatalog=!personal&&!sharedLocked&&window.twlfCatalog.hasHeroColumn();
+  if(!toCatalog)setHeroMembership(id,group);
 
   if(sharedLocked){
     save();render();closeModal();
@@ -337,6 +370,7 @@ document.querySelector('#form').addEventListener('submit',async event=>{
   const category=categoryById(data.category);
   const entry={id,name:(data.name||'').trim(),url:data.url,logo:(data.logo||'').trim(),
     description:(data.description||'').trim(),category:data.category,color:category?.color||'#75808a'};
+  if(toCatalog)entry.heroGroup=group;
 
   try{
     if(personal){
@@ -484,7 +518,7 @@ async function boot() {
   await window.twlfPrefs.ready.catch(()=>null);
   adoptPrefs();
   columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
-  populateCategorySelect();applyModules();renderHeroSettings();render();
+  populateCategorySelect();applyModules();renderHeroSettings();updatePublishHero();render();
   document.querySelector('#reset').hidden=false;
   // When the account's settings arrive after a redirect sign-in, re-adopt.
   window.twlfPrefs.onChange(()=>{adoptPrefs();renderHeroSettings();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;applyModules();populateCategorySelect();render();updateAccountUI()});
@@ -493,7 +527,7 @@ async function boot() {
   window.twlfAuth.ready.then(async()=>{
     await window.twlfPrefs.adoptAfterSignIn();
     await window.twlfCatalog.sync();
-    updateAccountUI();updateCatalogUI();
+    updateAccountUI();updateCatalogUI();updatePublishHero();renderHero();
   }).catch(showAuthError);
 }
 boot();

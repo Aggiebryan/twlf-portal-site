@@ -214,3 +214,5 @@ html[data-theme=light] .modal{background:rgba(255,255,255,.96)}
   color:var(--ink);font-size:12px;font-weight:600;letter-spacing:0}
 .hero-pick input[type=radio]{width:15px;height:15px;accent-color:var(--brand);flex:0 0 auto}
 .hero-pick label:last-child{margin-bottom:0!important}
+#publishHero[hidden]{display:none}
+#publishHero{margin-top:4px}
