@@ -143,7 +143,10 @@ function render() {
   document.documentElement.style.setProperty('--display-columns',displayColumns);
   const nav = [{id:'all',name:'All'},...categories];
   document.querySelector('#categoryNav').innerHTML = nav.map(item => `<button class="${active===item.id?'active':''}" data-category="${item.id}">${item.name}<span>${item.id==='all'?links.length:item.id==='most-used'?links.filter(link=>isMostUsed(link.id)).length:links.filter(link=>link.category===item.id).length}</span></button>`).join('');
-  const orderedCategories = categoryOrder.map(id => categoryById(id)).filter(Boolean);
+  // The hero already shows Most Used, so the dashboard does not repeat it as a
+  // panel. Selecting it from the nav still opens it on its own.
+  const orderedCategories = categoryOrder.map(id => categoryById(id)).filter(Boolean)
+    .filter(category => category.id !== 'most-used');
   const shownCategories = active === 'all' ? orderedCategories : categories.filter(category => category.id === active);
   const sections = shownCategories.map(category => ({category,items:matching(category.id)})).filter(section => section.items.length || !query);
   const count = sections.reduce((sum,section) => sum + section.items.length,0);
