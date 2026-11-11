@@ -195,10 +195,32 @@ function renderHeroSettings() {
   }).join('');
 }
 
+document.addEventListener('click', async event => {
+  if (!event.target.closest('#publishDescriptions')) return;
+  const button = document.querySelector('#publishDescriptions');
+  const byLinkId = Object.fromEntries(
+    (window.twlfCatalog.bundled().links || [])
+      .filter(link => (link.description || '').trim())
+      .map(link => [link.id, link.description]));
+  const pending = links.filter(l => l.itemId && !String(l.description || '').trim() && byLinkId[l.id]).length;
+  if (!pending) { notice('Every firm link already has a description.'); return; }
+  if (!window.confirm(`Write descriptions for ${pending} links that have none? Existing descriptions are left alone.`)) return;
+  button.disabled = true;
+  try {
+    const n = await window.twlfCatalog.publishDescriptions(byLinkId,
+      (done, total) => { button.textContent = `Writing ${done}/${total}…`; });
+    notice(`Added descriptions to ${n} firm links.`);
+  } catch (error) { notice(`Could not write descriptions: ${error.message}`, true); }
+  button.disabled = false; button.textContent = 'Add missing link descriptions';
+  render();
+});
+
 function updatePublishHero() {
   const button = document.querySelector('#publishHero');
   if (!button) return;
   button.hidden = !(catalogWritable() && window.twlfCatalog.hasHeroColumn());
+  const descriptions = document.querySelector('#publishDescriptions');
+  if (descriptions) descriptions.hidden = !catalogWritable();
 }
 
 document.addEventListener('click', async event => {

@@ -155,6 +155,22 @@ window.twlfCatalog = {
   },
 
   hasHeroColumn: () => Boolean(lists.links && lists.links.fields.heroGroup),
+  bundled: () => bundled,
+
+  /* Fill in descriptions from the bundled catalogue. Only ever writes where
+   * the list has none, so anything written by hand is left alone. */
+  async publishDescriptions(byLinkId, onProgress) {
+    if (!lists.links?.fields?.description) throw new Error('The Portal Links list has no LinkDescription column.');
+    const targets = catalog.links.filter(link =>
+      link.itemId && !String(link.description || '').trim() && byLinkId[link.id]);
+    let done = 0;
+    for (const link of targets) {
+      await this.updateLink(link.itemId, { description: byLinkId[link.id] }, { quiet: true });
+      onProgress?.(++done, targets.length);
+    }
+    await this.sync();
+    return targets.length;
+  },
 
   /* Write the current hero membership to the list so it is the same for
    * everyone. Sequential: SharePoint throttles bursts and this runs rarely. */

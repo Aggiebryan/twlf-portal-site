@@ -216,3 +216,6 @@ html[data-theme=light] .modal{background:rgba(255,255,255,.96)}
 .hero-pick label:last-child{margin-bottom:0!important}
 #publishHero[hidden]{display:none}
 #publishHero{margin-top:4px}
+#publishDescriptions[hidden]{display:none}
+#publishDescriptions{margin-top:6px}
+.catalog-panel .account-button+.account-button{margin-left:0}
