@@ -457,6 +457,13 @@ document.addEventListener('change',event=>{
   save();applyModules();
 });
 
+const clearNotice=()=>{document.querySelector('#notice').innerHTML=''};
+// The dismiss button was markup only — nothing ever listened to it.
+document.addEventListener('click',event=>{if(event.target.closest('#notice button'))clearNotice()});
+// A new message replaces the old one, and the Escape key clears it too.
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&document.querySelector('#notice').innerHTML&&document.querySelector('#backdrop').hidden&&document.querySelector('#settingsBackdrop').hidden)clearNotice();
+});
 function notice(message,isError){document.querySelector('#notice').innerHTML=`<div class="notice${isError?' auth-error':''}">${escapeHtml(message)}<button aria-label="Dismiss">×</button></div>`}
 function showAuthError(error){const message=error?.errorMessage||error?.message||'Microsoft sign-in could not be completed.';document.querySelector('#notice').innerHTML=`<div class="notice auth-error">${escapeHtml(message)}<button aria-label="Dismiss">×</button></div>`}
 function updateAccountUI(){
