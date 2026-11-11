@@ -2,6 +2,7 @@
 *{box-sizing:border-box}
 
 html{
+  --field:#1b2029;
   --ground:#111111;
   --glass:rgba(255,255,255,.045);
   --glass-strong:rgba(255,255,255,.075);
@@ -19,6 +20,7 @@ html{
   color-scheme:dark;
 }
 html[data-theme=light]{
+  --field:#ffffff;
   --ground:#eceae4;
   --glass:rgba(255,255,255,.72);
   --glass-strong:rgba(255,255,255,.86);
@@ -219,3 +221,10 @@ html[data-theme=light] .modal{background:rgba(255,255,255,.96)}
 #publishDescriptions[hidden]{display:none}
 #publishDescriptions{margin-top:6px}
 .catalog-panel .account-button+.account-button{margin-left:0}
+
+/* Native dropdowns need a solid, opaque surface: the popup list inherits the
+   select's background, and glass left white options on a white list. */
+select{color-scheme:inherit}
+.modal select,.hero-row select{background:var(--field);color:var(--ink)}
+.modal select option,.hero-row select option{background:var(--field);color:var(--ink)}
+.modal select optgroup,.hero-row select optgroup{background:var(--field);color:var(--ink)}
