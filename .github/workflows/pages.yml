@@ -1,0 +1,53 @@
+name: Deploy portal to Pages
+
+# Replaces the auto-generated "pages build and deployment" pipeline, whose
+# dynamic workflow wedged a run in `queued` and then failed every later run at
+# startup with no cancellable job. Owning the workflow gives us our own
+# concurrency group — with cancel-in-progress, so a stuck run is superseded
+# rather than blocking everything behind it — and readable logs.
+#
+# Requires Settings > Pages > Source to be "GitHub Actions".
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the files the site needs are present
+        run: |
+          set -e
+          for f in index.html app.js auth.js settings.js catalog.js modules.js \
+                   styles.css workspace.css links.json CNAME .nojekyll \
+                   assets/backdrop.jpg assets/manrope.woff2; do
+            [ -e "$f" ] || { echo "missing required file: $f"; exit 1; }
+          done
+          echo "logo files: $(ls logos | wc -l)"
+          echo "catalogue links: $(grep -o '"id"' links.json | wc -l)"
+
+      - uses: actions/configure-pages@v5
+
+      # .nojekyll in the repo root keeps this a verbatim copy of the tree.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
