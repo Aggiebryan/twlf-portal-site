@@ -38,6 +38,7 @@ const defaultPrefs = () => ({
   sizes: {},           // { [linkId]: { category: 'standard', mostUsed: 'large' } }
   usage: {},           // { [linkId]: timesOpened } -> drives the Most Used card
   modules: { microsoft365: true },
+  heroGroups: {},      // { [key]: { name, color, opacity, size } } for the hero cards
   customLinks: [],
   customCategories: [],
 });

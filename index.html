@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TWLF Work Portal</title>
   <meta name="description" content="The Woodlands Law Firm work portal">
-  <link rel="icon" href="favicon.ico?v=20261111.2" sizes="16x16 32x32 48x48">
-  <link rel="stylesheet" href="styles.css?v=20261111.2">
-  <link rel="stylesheet" href="workspace.css?v=20261111.2">
+  <link rel="icon" href="favicon.ico?v=20261111.3" sizes="16x16 32x32 48x48">
+  <link rel="stylesheet" href="styles.css?v=20261111.3">
+  <link rel="stylesheet" href="workspace.css?v=20261111.3">
 </head>
 <body>
   <div class="shell">
@@ -85,6 +85,10 @@
       <h2 id="settingsTitle">Portal settings</h2><p>Adjust how much fits across your workspace.</p>
       <label class="range-label">DISPLAY COLUMNS <output id="columnCount">2</output><input id="columns" type="range" min="1" max="4" step="1" value="2"></label>
       <div class="catalog-panel"><strong>Shared catalog</strong><p id="catalogStatus">Loading…</p><button type="button" class="account-button" id="seedCatalog" hidden>Load firm catalog into SharePoint</button></div>
+      <div class="hero-settings"><strong>Hero cards</strong>
+        <p class="hero-hint">Name, colour, tint and tile size for each card across the top.</p>
+        <div id="heroSettings"></div>
+      </div>
       <div class="module-list"><strong>Modules</strong><label class="check-label"><input type="checkbox" data-module="microsoft365" checked> MICROSOFT 365 ACTIVITY</label></div>
       <form id="categoryForm" class="category-form"><strong>Add a category</strong><div><input name="name" placeholder="Category name" required maxlength="40"><input name="color" type="color" value="#287b67" aria-label="Category color"><button class="save">Add</button></div></form>
       <div class="account-panel"><div><strong id="accountName">Your portal</strong><p id="accountStatus">Not signed in</p></div><button class="account-button" id="settingsAccount">Sign in</button></div>
@@ -93,10 +97,10 @@
   </div>
 
   <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js" defer></script>
-  <script src="auth.js?v=20261111.2" defer></script>
-  <script src="settings.js?v=20261111.2" defer></script>
-  <script src="catalog.js?v=20261111.2" defer></script>
-  <script src="app.js?v=20261111.2" defer></script>
-  <script src="modules.js?v=20261111.2" defer></script>
+  <script src="auth.js?v=20261111.3" defer></script>
+  <script src="settings.js?v=20261111.3" defer></script>
+  <script src="catalog.js?v=20261111.3" defer></script>
+  <script src="app.js?v=20261111.3" defer></script>
+  <script src="modules.js?v=20261111.3" defer></script>
 </body>
 </html>

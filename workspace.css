@@ -10,14 +10,14 @@
 }
 .feature::before{
   content:"";position:absolute;inset:0;z-index:0;
-  background:radial-gradient(120% 90% at 85% 10%, color-mix(in srgb,var(--accent) 42%,transparent), transparent 62%);
+  background:radial-gradient(120% 90% at 85% 10%, color-mix(in srgb,var(--accent) var(--wash,42%),transparent), transparent 62%);
 }
 .feature>*{position:relative;z-index:1}
 .feature .badge{
   display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   padding:6px 11px;border-radius:999px;color:#08131a;background:var(--accent);
 }
-.feature-links{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.feature-links{display:grid;grid-template-columns:repeat(var(--hero-cols,4),1fr);gap:8px;margin-top:14px}
 .mini{
   position:relative;border-radius:13px;padding:10px 6px 9px;min-width:0;
   display:flex;flex-direction:column;align-items:center;gap:8px;
@@ -25,7 +25,7 @@
   text-decoration:none;color:var(--ink);transition:transform .15s, background .15s, border-color .15s;
 }
 .mini:hover{background:var(--glass-hover);border-color:color-mix(in srgb,var(--accent) 60%,transparent);transform:translateY(-2px)}
-.mini img{width:30px;height:30px;object-fit:contain;flex:0 0 auto}
+.mini img{width:var(--mini-logo,30px);height:var(--mini-logo,30px);object-fit:contain;flex:0 0 auto}
 
 .mini span{
   font-size:10px;font-weight:700;letter-spacing:-.012em;text-align:center;line-height:1.25;width:100%;overflow-wrap:anywhere;

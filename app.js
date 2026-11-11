@@ -11,7 +11,27 @@ const mostUsedCategory = { id: 'most-used', name: 'Most Used', color: '#d9623f' 
  * --------------------------------------------------------------- */
 const COURT_LINKS = ['t3', 't10', 't18', 't13', 't15', 't20', 't16', 't22'];
 const WOODLANDS_LAW = ['t27', 't31', 't30', 't4', 't7', 't1', 't2'];
-const HERO_SLOTS = 8;
+
+/* Appearance is per user and editable in Settings; these are the firm's
+ * starting points. Size sets how many tiles fit, and the row count stays at
+ * two, so the slot count follows from it. */
+const HERO_SIZES = {
+  small:  { cols: 5, logo: 24, label: 'Small' },
+  medium: { cols: 4, logo: 30, label: 'Medium' },
+  large:  { cols: 3, logo: 40, label: 'Large' },
+};
+const HERO_ROWS = 2;
+const HERO_DEFAULTS = {
+  'most-used': { name: 'Most Used',     color: '#14b8a6', opacity: 42, size: 'medium' },
+  'court':     { name: 'Court Links',   color: '#ec4899', opacity: 42, size: 'medium' },
+  'woodlands': { name: 'Woodlands Law', color: '#f59e0b', opacity: 42, size: 'medium' },
+};
+const heroKeys = () => Object.keys(HERO_DEFAULTS);
+const heroStyle = key => ({ ...HERO_DEFAULTS[key], ...((prefs.heroGroups || {})[key] || {}) });
+const heroSlots = key => {
+  const size = HERO_SIZES[heroStyle(key).size] || HERO_SIZES.medium;
+  return size.cols * HERO_ROWS;
+};
 
 let catalog = { version: 1, categories: [], defaultMostUsed: [], links: [] };
 let prefs = window.twlfPrefs.get();
@@ -117,15 +137,15 @@ function matching(categoryId) {
 function renderHero() {
   const byId = Object.fromEntries(links.map(link => [String(link.id), link]));
   const ranked = Object.keys(usage).filter(id => byId[id]).sort((a, b) => usage[b] - usage[a]);
-  // Until someone has clicked around, fall back to their pinned set.
-  const top = [...ranked, ...mostUsed.filter(id => !ranked.includes(id))].slice(0, HERO_SLOTS);
-  const groups = [
-    { name: 'Most Used',     ids: top,           accent: 'var(--teal)'  },
-    { name: 'Court Links',   ids: COURT_LINKS,   accent: 'var(--pink)'  },
-    { name: 'Woodlands Law', ids: WOODLANDS_LAW, accent: 'var(--amber)' },
-  ];
-  document.querySelector('#hero').innerHTML = groups.map(group => {
-    const items = group.ids.map(id => byId[String(id)]).filter(Boolean).slice(0, HERO_SLOTS);
+  const sources = {
+    'most-used': [...ranked, ...mostUsed.filter(id => !ranked.includes(id))],
+    'court': COURT_LINKS,
+    'woodlands': WOODLANDS_LAW,
+  };
+  document.querySelector('#hero').innerHTML = heroKeys().map(key => {
+    const style = heroStyle(key);
+    const size = HERO_SIZES[style.size] || HERO_SIZES.medium;
+    const items = (sources[key] || []).map(id => byId[String(id)]).filter(Boolean).slice(0, heroSlots(key));
     const body = items.length
       ? `<div class="feature-links">${items.map(link => `
           <a class="mini" href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer"
@@ -134,10 +154,50 @@ function renderHero() {
             <span>${escapeHtml(link.name)}</span>${usage[link.id] ? `<b>${usage[link.id]}</b>` : ''}
           </a>`).join('')}</div>`
       : '<p class="empty-note">Nothing picked for this group yet.</p>';
-    return `<article class="feature" style="--accent:${group.accent}">
-      <span class="badge">${escapeHtml(group.name)}</span>${body}</article>`;
+    return `<article class="feature" style="--accent:${escapeHtml(style.color)};--wash:${Number(style.opacity) || 0}%;--hero-cols:${size.cols};--mini-logo:${size.logo}px">
+      <span class="badge">${escapeHtml(style.name)}</span>${body}</article>`;
   }).join('');
 }
+
+/* Settings: name, colour, opacity and tile size for each hero card. */
+function renderHeroSettings() {
+  const host = document.querySelector('#heroSettings');
+  if (!host) return;
+  host.innerHTML = heroKeys().map(key => {
+    const s = heroStyle(key);
+    return `<div class="hero-row" data-hero="${key}">
+      <input class="hero-name" type="text" value="${escapeHtml(s.name)}" maxlength="28" aria-label="Card name">
+      <input class="hero-color" type="color" value="${escapeHtml(s.color)}" aria-label="Accent colour">
+      <select class="hero-size" aria-label="Tile size">${Object.entries(HERO_SIZES)
+        .map(([k, v]) => `<option value="${k}"${k === s.size ? ' selected' : ''}>${v.label}</option>`).join('')}</select>
+      <label class="hero-opacity">TINT <output>${Number(s.opacity)}%</output>
+        <input type="range" min="0" max="80" step="2" value="${Number(s.opacity)}" aria-label="Tint strength"></label>
+    </div>`;
+  }).join('');
+}
+
+function updateHero(key, patch) {
+  prefs.heroGroups = { ...(prefs.heroGroups || {}), [key]: { ...heroStyle(key), ...patch } };
+  window.twlfPrefs.set({ heroGroups: prefs.heroGroups });
+  document.querySelector('#reset').hidden = false;
+  renderHero();
+}
+
+document.addEventListener('input', event => {
+  const row = event.target.closest('.hero-row');
+  if (!row) return;
+  const key = row.dataset.hero;
+  if (event.target.classList.contains('hero-name')) updateHero(key, { name: event.target.value });
+  if (event.target.classList.contains('hero-color')) updateHero(key, { color: event.target.value });
+  if (event.target.type === 'range') {
+    row.querySelector('.hero-opacity output').textContent = `${event.target.value}%`;
+    updateHero(key, { opacity: Number(event.target.value) });
+  }
+});
+document.addEventListener('change', event => {
+  const row = event.target.closest('.hero-row');
+  if (row && event.target.classList.contains('hero-size')) updateHero(row.dataset.hero, { size: event.target.value });
+});
 
 function render() {
   document.documentElement.style.setProperty('--display-columns',displayColumns);
@@ -271,8 +331,8 @@ document.querySelector('#form').addEventListener('submit',async event=>{
 document.querySelector('#theme').addEventListener('click',()=>{applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');save()});
 document.querySelector('#reset').addEventListener('click',()=>{
   if(!window.confirm('Reset your layout, sizes and Most Used to the firm defaults?'))return;
-  window.twlfPrefs.set({mostUsed:null,mostUsedOrder:[],categoryOrder:[],linkOrder:{},sizes:{},customLinks:[],displayColumns:2});
-  adoptPrefs();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
+  window.twlfPrefs.set({mostUsed:null,mostUsedOrder:[],categoryOrder:[],linkOrder:{},sizes:{},customLinks:[],displayColumns:2,heroGroups:{}});
+  adoptPrefs();renderHeroSettings();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
   document.querySelector('#reset').hidden=true;render();
 });
 
@@ -401,10 +461,10 @@ async function boot() {
   await window.twlfPrefs.ready.catch(()=>null);
   adoptPrefs();
   columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
-  populateCategorySelect();applyModules();render();
+  populateCategorySelect();applyModules();renderHeroSettings();render();
   document.querySelector('#reset').hidden=false;
   // When the account's settings arrive after a redirect sign-in, re-adopt.
-  window.twlfPrefs.onChange(()=>{adoptPrefs();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;applyModules();populateCategorySelect();render();updateAccountUI()});
+  window.twlfPrefs.onChange(()=>{adoptPrefs();renderHeroSettings();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;applyModules();populateCategorySelect();render();updateAccountUI()});
   window.twlfCatalog.onChange(()=>{adoptPrefs();populateCategorySelect();render();updateCatalogUI()});
   updateCatalogUI();
   window.twlfAuth.ready.then(async()=>{
