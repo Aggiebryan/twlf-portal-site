@@ -3,7 +3,6 @@
  * count, theme, Most Used, which modules are on — comes from window.twlfPrefs,
  * which syncs to the signed-in user's OneDrive app folder. */
 
-const mostUsedCategory = { id: 'most-used', name: 'Most Used', color: '#d9623f' };
 
 /* ---------------------------------------------------------------
  * HERO ROW — edit these two lists to choose what each card holds.
@@ -22,11 +21,21 @@ const HERO_SIZES = {
 };
 const HERO_ROWS = 2;
 const HERO_DEFAULTS = {
-  'most-used': { name: 'Most Used',     color: '#14b8a6', opacity: 42, size: 'medium' },
-  'court':     { name: 'Court Links',   color: '#ec4899', opacity: 42, size: 'medium' },
-  'woodlands': { name: 'Woodlands Law', color: '#f59e0b', opacity: 42, size: 'medium' },
+  'most-used': { name: 'Most Used',     color: '#14b8a6', ink: '#08131a', opacity: 42, size: 'medium' },
+  'court':     { name: 'Court Links',   color: '#ec4899', ink: '#08131a', opacity: 42, size: 'medium' },
+  'woodlands': { name: 'Woodlands Law', color: '#f59e0b', ink: '#08131a', opacity: 42, size: 'medium' },
 };
+const HERO_SEED = { court: COURT_LINKS, woodlands: WOODLANDS_LAW };
 const heroKeys = () => Object.keys(HERO_DEFAULTS);
+const heroMembers = key => ((prefs.heroMembers || {})[key] || HERO_SEED[key] || []).map(String);
+function setHeroMembership(id, key) {
+  const members = { court: heroMembers('court'), woodlands: heroMembers('woodlands') };
+  for (const k of Object.keys(members)) members[k] = members[k].filter(x => x !== String(id));
+  if (members[key]) members[key] = [String(id), ...members[key]];
+  prefs.heroMembers = members;
+  return members;
+}
+const heroGroupOf = id => heroKeys().find(k => k !== 'most-used' && heroMembers(k).includes(String(id))) || '';
 const heroStyle = key => ({ ...HERO_DEFAULTS[key], ...((prefs.heroGroups || {})[key] || {}) });
 const heroSlots = key => {
   const size = HERO_SIZES[heroStyle(key).size] || HERO_SIZES.medium;
@@ -35,7 +44,7 @@ const heroSlots = key => {
 
 let catalog = { version: 1, categories: [], defaultMostUsed: [], links: [] };
 let prefs = window.twlfPrefs.get();
-let categories = [mostUsedCategory];
+let categories = [];
 let links = [];
 let mostUsed = [];
 let mostUsedOrder = [];
@@ -76,7 +85,7 @@ function sizeFor(link, context) {
 function adoptPrefs() {
   prefs = window.twlfPrefs.get();
   catalog = window.twlfCatalog.get();
-  categories = [mostUsedCategory, ...catalog.categories, ...(prefs.customCategories || [])];
+  categories = [...catalog.categories, ...(prefs.customCategories || [])];
   links = [...catalog.links, ...(prefs.customLinks || [])];
   mostUsed = (prefs.mostUsed || catalog.defaultMostUsed || []).map(String);
   mostUsedOrder = (prefs.mostUsedOrder || []).map(String);
@@ -96,6 +105,7 @@ function save() {
     customLinks: links.filter(isPersonalLink),
     customCategories: prefs.customCategories || [],
     mostUsed, mostUsedOrder, categoryOrder, linkOrder, sizes, displayColumns, usage,
+    heroGroups: prefs.heroGroups, heroMembers: prefs.heroMembers,
     theme: document.documentElement.dataset.theme,
     modules: prefs.modules,
   });
@@ -139,8 +149,8 @@ function renderHero() {
   const ranked = Object.keys(usage).filter(id => byId[id]).sort((a, b) => usage[b] - usage[a]);
   const sources = {
     'most-used': [...ranked, ...mostUsed.filter(id => !ranked.includes(id))],
-    'court': COURT_LINKS,
-    'woodlands': WOODLANDS_LAW,
+    'court': heroMembers('court'),
+    'woodlands': heroMembers('woodlands'),
   };
   document.querySelector('#hero').innerHTML = heroKeys().map(key => {
     const style = heroStyle(key);
@@ -154,7 +164,7 @@ function renderHero() {
             <span>${escapeHtml(link.name)}</span>${usage[link.id] ? `<b>${usage[link.id]}</b>` : ''}
           </a>`).join('')}</div>`
       : '<p class="empty-note">Nothing picked for this group yet.</p>';
-    return `<article class="feature" style="--accent:${escapeHtml(style.color)};--wash:${Number(style.opacity) || 0}%;--hero-cols:${size.cols};--mini-logo:${size.logo}px">
+    return `<article class="feature" style="--accent:${escapeHtml(style.color)};--badge-ink:${escapeHtml(style.ink || '#08131a')};--wash:${Number(style.opacity) || 0}%;--hero-cols:${size.cols};--mini-logo:${size.logo}px">
       <span class="badge">${escapeHtml(style.name)}</span>${body}</article>`;
   }).join('');
 }
@@ -167,7 +177,8 @@ function renderHeroSettings() {
     const s = heroStyle(key);
     return `<div class="hero-row" data-hero="${key}">
       <input class="hero-name" type="text" value="${escapeHtml(s.name)}" maxlength="28" aria-label="Card name">
-      <input class="hero-color" type="color" value="${escapeHtml(s.color)}" aria-label="Accent colour">
+      <input class="hero-color" type="color" value="${escapeHtml(s.color)}" aria-label="Accent colour" title="Accent colour">
+      <input class="hero-ink" type="color" value="${escapeHtml(s.ink || '#08131a')}" aria-label="Title text colour" title="Title text colour">
       <select class="hero-size" aria-label="Tile size">${Object.entries(HERO_SIZES)
         .map(([k, v]) => `<option value="${k}"${k === s.size ? ' selected' : ''}>${v.label}</option>`).join('')}</select>
       <label class="hero-opacity">TINT <output>${Number(s.opacity)}%</output>
@@ -189,6 +200,7 @@ document.addEventListener('input', event => {
   const key = row.dataset.hero;
   if (event.target.classList.contains('hero-name')) updateHero(key, { name: event.target.value });
   if (event.target.classList.contains('hero-color')) updateHero(key, { color: event.target.value });
+  if (event.target.classList.contains('hero-ink')) updateHero(key, { ink: event.target.value });
   if (event.target.type === 'range') {
     row.querySelector('.hero-opacity output').textContent = `${event.target.value}%`;
     updateHero(key, { opacity: Number(event.target.value) });
@@ -283,19 +295,20 @@ function openModal(link=null,context=null){
     form.elements.logo.value=link.logo||'';form.elements.description.value=link.description||'';
     form.elements.category.value=link.category;
     form.elements.size.value=sizeFor(link,'category');
-    form.elements.mostUsed.checked=isMostUsed(link.id);
-    form.elements.mostUsedSize.value=sizeFor(link,'most-used');
+    const group=heroGroupOf(link.id);
+    [...form.elements.heroGroup].forEach(radio=>{radio.checked=radio.value===group});
   }
   setSharedFieldsEnabled(!shared);
-  toggleMostUsedSize();
+  // The radios carry whatever the cards are currently called.
+  document.querySelectorAll('[data-hero-label]').forEach(span=>{
+    span.textContent = heroStyle(span.dataset.heroLabel).name;
+  });
   document.querySelector('#backdrop').hidden=false;
 }
 const closeModal=()=>{document.querySelector('#backdrop').hidden=true;editingId=null;editingContext=null};
 document.querySelector('#close').onclick=closeModal; document.querySelector('#cancel').onclick=closeModal;
 document.querySelector('#backdrop').addEventListener('click',event=>{if(event.target.id==='backdrop')closeModal()});
 function populateCategorySelect(){document.querySelector('#categorySelect').innerHTML=categories.filter(category=>category.id!=='most-used').map(category=>`<option value="${category.id}">${category.name}</option>`).join('')}
-function toggleMostUsedSize(){document.querySelector('#mostUsedSizeLabel').hidden=!document.querySelector('#form').elements.mostUsed.checked}
-document.querySelector('#form').elements.mostUsed.addEventListener('change',toggleMostUsedSize);
 
 document.querySelector('#form').addEventListener('submit',async event=>{
   event.preventDefault();
@@ -304,16 +317,26 @@ document.querySelector('#form').addEventListener('submit',async event=>{
   const writable=catalogWritable();
   const personal=existing?isPersonalLink(existing):!writable;
   const id=existing?existing.id:(writable?`s-${Date.now()}`:`custom-${Date.now()}`);
-  if(!/^https?:\/\//i.test(data.url))data.url=`https://${data.url}`;
+  // A catalogue link opened while the shared store is read-only has its shared
+  // fields disabled, and a disabled field is absent from FormData — so the
+  // personal half of this form must still work without them.
+  const sharedLocked=Boolean(existing)&&!isPersonalLink(existing)&&!writable;
+
+  // Card size and hero membership are personal for every link, shared or not.
+  sizes={...sizes,[id]:{category:data.size||'standard'}};
+  setHeroMembership(id,data.heroGroup||'');
+
+  if(sharedLocked){
+    save();render();closeModal();
+    notice(`Card size and hero card updated for “${existing.name}”.`);
+    return;
+  }
+
+  if(!/^https?:\/\//i.test(data.url||''))data.url=`https://${data.url||''}`;
   if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;
   const category=categoryById(data.category);
-  const entry={id,name:data.name.trim(),url:data.url,logo:data.logo.trim(),description:data.description.trim(),category:data.category,color:category?.color||'#75808a'};
-
-  // Size and Most Used are personal for every link, shared or not.
-  sizes={...sizes,[id]:{category:data.size||'standard',mostUsed:data.mostUsedSize||data.size||'standard'}};
-  const wanted=Boolean(data.mostUsed);
-  if(wanted&&!isMostUsed(id))mostUsed=[...mostUsed,String(id)];
-  if(!wanted)mostUsed=mostUsed.filter(item=>item!==String(id));
+  const entry={id,name:(data.name||'').trim(),url:data.url,logo:(data.logo||'').trim(),
+    description:(data.description||'').trim(),category:data.category,color:category?.color||'#75808a'};
 
   try{
     if(personal){
@@ -331,7 +354,7 @@ document.querySelector('#form').addEventListener('submit',async event=>{
 document.querySelector('#theme').addEventListener('click',()=>{applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');save()});
 document.querySelector('#reset').addEventListener('click',()=>{
   if(!window.confirm('Reset your layout, sizes and Most Used to the firm defaults?'))return;
-  window.twlfPrefs.set({mostUsed:null,mostUsedOrder:[],categoryOrder:[],linkOrder:{},sizes:{},customLinks:[],displayColumns:2,heroGroups:{}});
+  window.twlfPrefs.set({mostUsed:null,mostUsedOrder:[],categoryOrder:[],linkOrder:{},sizes:{},customLinks:[],displayColumns:2,heroGroups:{},heroMembers:null});
   adoptPrefs();renderHeroSettings();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
   document.querySelector('#reset').hidden=true;render();
 });

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TWLF Work Portal</title>
   <meta name="description" content="The Woodlands Law Firm work portal">
-  <link rel="icon" href="favicon.ico?v=20261111.3" sizes="16x16 32x32 48x48">
-  <link rel="stylesheet" href="styles.css?v=20261111.3">
-  <link rel="stylesheet" href="workspace.css?v=20261111.3">
+  <link rel="icon" href="favicon.ico?v=20261111.4" sizes="16x16 32x32 48x48">
+  <link rel="stylesheet" href="styles.css?v=20261111.4">
+  <link rel="stylesheet" href="workspace.css?v=20261111.4">
 </head>
 <body>
   <div class="shell">
@@ -72,8 +72,11 @@
         <label>DESCRIPTION <span class="optional">OPTIONAL</span><textarea name="description" placeholder="What this resource is used for" maxlength="160"></textarea></label>
         <label>CATEGORY<select name="category" id="categorySelect"></select></label>
         <label>CARD SIZE<select name="size"><option value="standard">Medium</option><option value="large">Large</option><option value="small">Small</option></select></label>
-        <label class="check-label"><input type="checkbox" name="mostUsed"> ALSO SHOW IN MOST USED</label>
-        <label id="mostUsedSizeLabel">MOST USED CARD SIZE<select name="mostUsedSize"><option value="standard">Medium</option><option value="large">Large</option><option value="small">Small</option></select></label>
+        <fieldset class="hero-pick" id="mostUsedSizeLabel"><legend>SHOW IN A HERO CARD</legend>
+          <label><input type="radio" name="heroGroup" value="" checked> <span>None</span></label>
+          <label><input type="radio" name="heroGroup" value="court"> <span data-hero-label="court">Court Links</span></label>
+          <label><input type="radio" name="heroGroup" value="woodlands"> <span data-hero-label="woodlands">Woodlands Law</span></label>
+        </fieldset>
         <div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save" id="saveLink">Add link</button></div>
       </form>
     </section>
@@ -97,10 +100,10 @@
   </div>
 
   <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js" defer></script>
-  <script src="auth.js?v=20261111.3" defer></script>
-  <script src="settings.js?v=20261111.3" defer></script>
-  <script src="catalog.js?v=20261111.3" defer></script>
-  <script src="app.js?v=20261111.3" defer></script>
-  <script src="modules.js?v=20261111.3" defer></script>
+  <script src="auth.js?v=20261111.4" defer></script>
+  <script src="settings.js?v=20261111.4" defer></script>
+  <script src="catalog.js?v=20261111.4" defer></script>
+  <script src="app.js?v=20261111.4" defer></script>
+  <script src="modules.js?v=20261111.4" defer></script>
 </body>
 </html>

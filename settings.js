@@ -38,7 +38,8 @@ const defaultPrefs = () => ({
   sizes: {},           // { [linkId]: { category: 'standard', mostUsed: 'large' } }
   usage: {},           // { [linkId]: timesOpened } -> drives the Most Used card
   modules: { microsoft365: true },
-  heroGroups: {},      // { [key]: { name, color, opacity, size } } for the hero cards
+  heroGroups: {},      // { [key]: { name, color, ink, opacity, size } } for the hero cards
+  heroMembers: null,   // { court: [linkId], woodlands: [...] }; null means use the firm seed
   customLinks: [],
   customCategories: [],
 });
