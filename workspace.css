@@ -25,9 +25,15 @@
   text-decoration:none;color:var(--ink);transition:transform .15s, background .15s, border-color .15s;
 }
 .mini:hover{background:var(--glass-hover);border-color:color-mix(in srgb,var(--accent) 60%,transparent);transform:translateY(-2px)}
-.mini img{width:var(--mini-logo,30px);height:var(--mini-logo,30px);object-fit:contain;flex:0 0 auto}
+/* A light plate behind the mark only — many of these logos are dark or
+   transparent and vanish against the glass. Sized to the icon, never the title. */
+.mini-plate{
+  width:var(--mini-logo,38px);height:var(--mini-logo,38px);flex:0 0 auto;
+  border-radius:10px;background:var(--logo-plate,#fff);display:grid;place-items:center;overflow:hidden;
+}
+.mini-plate img{width:76%;height:76%;object-fit:contain}
 
-.mini span{
+.mini span:not(.mini-plate){
   font-size:10px;font-weight:700;letter-spacing:-.012em;text-align:center;line-height:1.25;width:100%;overflow-wrap:anywhere;
   /* Two lines keeps every tile the same height however long the name is. */
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(2 * 1.25em);

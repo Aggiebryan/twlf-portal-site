@@ -15,9 +15,9 @@ const WOODLANDS_LAW = ['t27', 't31', 't30', 't4', 't7', 't1', 't2'];
  * starting points. Size sets how many tiles fit, and the row count stays at
  * two, so the slot count follows from it. */
 const HERO_SIZES = {
-  small:  { cols: 5, logo: 24, label: 'Small' },
-  medium: { cols: 4, logo: 30, label: 'Medium' },
-  large:  { cols: 3, logo: 40, label: 'Large' },
+  small:  { cols: 5, logo: 30, label: 'Small' },
+  medium: { cols: 4, logo: 38, label: 'Medium' },
+  large:  { cols: 3, logo: 50, label: 'Large' },
 };
 const HERO_ROWS = 2;
 const HERO_DEFAULTS = {
@@ -168,7 +168,7 @@ function renderHero() {
       ? `<div class="feature-links">${items.map(link => `
           <a class="mini" href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer"
              data-track="${escapeHtml(String(link.id))}" title="${escapeHtml(link.name)}">
-            <img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.visibility='hidden'">
+            <span class="mini-plate"><img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.visibility='hidden'"></span>
             <span>${escapeHtml(link.name)}</span>
           </a>`).join('')}</div>`
       : '<p class="empty-note">Nothing picked for this group yet.</p>';
