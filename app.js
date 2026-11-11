@@ -153,6 +153,7 @@ function matching(categoryId) {
 
 function renderHero() {
   const byId = Object.fromEntries(links.map(link => [String(link.id), link]));
+  // Counted for ranking only — the tally is deliberately not shown on the tile.
   const ranked = Object.keys(usage).filter(id => byId[id]).sort((a, b) => usage[b] - usage[a]);
   const sources = {
     'most-used': [...ranked, ...mostUsed.filter(id => !ranked.includes(id))],
@@ -168,7 +169,7 @@ function renderHero() {
           <a class="mini" href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer"
              data-track="${escapeHtml(String(link.id))}" title="${escapeHtml(link.name)}">
             <img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.visibility='hidden'">
-            <span>${escapeHtml(link.name)}</span>${usage[link.id] ? `<b>${usage[link.id]}</b>` : ''}
+            <span>${escapeHtml(link.name)}</span>
           </a>`).join('')}</div>`
       : '<p class="empty-note">Nothing picked for this group yet.</p>';
     return `<article class="feature" style="--accent:${escapeHtml(style.color)};--badge-ink:${escapeHtml(style.ink || '#08131a')};--wash:${Number(style.opacity) || 0}%;--hero-cols:${size.cols};--mini-logo:${size.logo}px">
