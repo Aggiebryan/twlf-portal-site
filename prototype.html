@@ -127,7 +127,7 @@ body::after{
 /* ---------- hero feature cards ---------- */
 .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(236px,1fr));gap:14px;margin-bottom:18px}
 .feature{
-  position:relative;overflow:hidden;border-radius:var(--r-lg);padding:18px;min-height:176px;
+  position:relative;overflow:hidden;border-radius:var(--r-lg);padding:18px;min-height:232px;
   border:1px solid var(--edge);background:var(--glass);
   backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
   display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;color:var(--ink);
@@ -143,11 +143,22 @@ body::after{
   align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   padding:6px 11px;border-radius:999px;color:#08131a;background:var(--accent);
 }
-.feature .glyph{width:62px;height:62px;border-radius:17px;background:rgba(255,255,255,.1);
-  border:1px solid var(--edge);display:grid;place-items:center;margin:14px 0 0}
-.feature .glyph img{width:38px;height:38px;object-fit:contain}
-.feature h3{margin:12px 0 3px;font-size:17px;font-weight:800;letter-spacing:-.03em;line-height:1.18}
-.feature p{margin:0;font-size:11.5px;color:var(--muted)}
+.feature h3{margin:13px 0 2px;font-size:17px;font-weight:800;letter-spacing:-.03em;line-height:1.18}
+.feature p{margin:0;font-size:11px;color:var(--muted)}
+/* Each hero card is a group of links, not a single destination. */
+.feature-links{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:13px 0 11px}
+.mini{
+  display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:12px;min-width:0;
+  background:rgba(255,255,255,.08);border:1px solid var(--edge-soft);
+  text-decoration:none;color:var(--ink);transition:.15s;
+}
+:root[data-theme=light] .mini{background:rgba(255,255,255,.75)}
+.mini:hover{background:rgba(255,255,255,.17);border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+:root[data-theme=light] .mini:hover{background:#fff}
+.mini img{width:19px;height:19px;object-fit:contain;flex:0 0 auto;border-radius:4px;background:#fff}
+.mini span{font-size:11px;font-weight:650;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini b{margin-left:auto;font-size:9.5px;font-weight:800;color:var(--accent);flex:0 0 auto}
+.feature .empty{font-size:11px;color:var(--faint);margin:13px 0 11px;line-height:1.5}
 
 /* ---------- link tiles ---------- */
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
@@ -234,6 +245,33 @@ body::after{
 <div class="note">Prototype · real catalogue from links.json · nothing here is wired up yet</div>
 
 <script>
+/* ------------------------------------------------------------------
+ * HERO ROW — edit these two lists to choose what appears in each card.
+ * "Most Used" is not listed: it is measured from real clicks below.
+ * ------------------------------------------------------------------ */
+const COURT_LINKS = ['t3', 't10', 't18', 't13', 't15', 't20'];
+//  t3 eFile Texas · t10 re:SearchTX · t18 PACER · t13 MoCo District Clerk
+//  t15 HC District Clerk · t20 Harris JP Odyssey
+const WOODLANDS_LAW = ['t27', 't26', 't31', 't30', 't28', 't29'];
+//  t27 Woodlands Law · t26 Estate Site · t31 Phone Intake · t30 Cal.com
+//  t28 WordPress · t29 N8N
+const HERO_SLOTS = 6;
+
+/* Usage is counted per person in this browser. When the real portal takes
+ * this over it moves to twlfPrefs, which syncs to the user's OneDrive, so a
+ * person's Most Used follows them between devices. */
+const USAGE_KEY = 'twlf-usage-v1';
+const readUsage = () => { try { return JSON.parse(localStorage.getItem(USAGE_KEY)) || {}; } catch { return {}; } };
+function countClick(id) {
+  const usage = readUsage();
+  usage[id] = (usage[id] || 0) + 1;
+  try { localStorage.setItem(USAGE_KEY, JSON.stringify(usage)); } catch { /* private mode */ }
+}
+document.addEventListener('click', event => {
+  const hit = event.target.closest('[data-track]');
+  if (hit) countClick(hit.dataset.track);
+});
+
 const ACCENTS = ['--teal','--pink','--amber','--green','--violet','--brand'];
 const LOGO_EXT = {t2:'png',t3:'png',t4:'png',t5:'png',t7:'png',t11:'svg',t12:'png',t16:'png',t18:'png',t19:'png',t20:'png',t21:'png',t22:'png',t23:'png',t32:'png',t35:'jpg',t36:'png',t39:'png',t40:'png',t42:'png',t43:'png',t45:'png',t48:'png',t56:'png',t57:'svg',t58:'png',t59:'png',t60:'png',t61:'png',t62:'jpg',t64:'png',t72:'png',t73:'png',t74:'png',t75:'png',t76:'jpg',t77:'png',t78:'png',t80:'png',t81:'jpg',t82:'png'};
 const logo = id => `logos/${id}.${LOGO_EXT[id] || 'ico'}`;
@@ -255,22 +293,43 @@ fetch('links.json').then(r => r.json()).then(data => {
     ['All', ...data.categories.map(c => c.name)]
       .map((n, i) => `<button class="${i===0?'on':''}">${esc(n)}</button>`).join('');
 
-  // Hero: the first three pinned links, in the design's course-card idiom.
-  document.querySelector('#hero').innerHTML = data.defaultMostUsed.slice(0, 3).map((id, i) => {
-    const l = byId[id]; if (!l) return '';
-    const a = ACCENTS[i];
-    return `<a class="feature" href="${esc(l.url)}" target="_blank" rel="noreferrer" style="--accent:var(${a})">
-      <span class="badge">${esc((data.categories.find(c=>c.id===l.category)||{}).name || 'Portal')}</span>
-      <span class="glyph"><img src="${logo(l.id)}" alt=""></span>
-      <div><h3>${esc(l.name)}</h3><p>${esc(host(l.url))}</p></div>
-    </a>`;
+  // Hero: three curated groups of links rather than three single destinations.
+  const usage = readUsage();
+  const ranked = Object.keys(usage)
+    .filter(id => byId[id])
+    .sort((a, b) => usage[b] - usage[a]);
+  // Until someone has actually clicked around, fall back to the firm's pinned set.
+  const mostUsed = [...ranked, ...data.defaultMostUsed.filter(id => !ranked.includes(id))]
+    .slice(0, HERO_SLOTS);
+
+  const groups = [
+    { name: 'Most Used',     ids: mostUsed,      accent: '--teal',
+      note: ranked.length ? 'Ranked by how often you open them' : 'Firm defaults until you start clicking' },
+    { name: 'Court Links',   ids: COURT_LINKS,   accent: '--pink',  note: 'Filing, dockets and clerks' },
+    { name: 'Woodlands Law', ids: WOODLANDS_LAW, accent: '--amber', note: 'Firm sites and internal tools' },
+  ];
+
+  document.querySelector('#hero').innerHTML = groups.map(group => {
+    const items = group.ids.map(id => byId[id]).filter(Boolean).slice(0, HERO_SLOTS);
+    const body = items.length
+      ? `<div class="feature-links">${items.map(l => `
+          <a class="mini" href="${esc(l.url)}" target="_blank" rel="noreferrer" data-track="${esc(l.id)}" title="${esc(l.name)}">
+            <img src="${logo(l.id)}" alt="" onerror="this.style.visibility='hidden'">
+            <span>${esc(l.name)}</span>${usage[l.id] ? `<b>${usage[l.id]}</b>` : ''}
+          </a>`).join('')}</div>`
+      : `<p class="empty">Nothing picked yet — add link IDs to this group at the top of the file.</p>`;
+    return `<article class="feature" style="--accent:var(${group.accent})">
+      <span class="badge">${esc(group.name)}</span>
+      ${body}
+      <p>${esc(group.note)}</p>
+    </article>`;
   }).join('');
 
   document.querySelector('#panels').innerHTML = data.categories.map(c => {
     const items = data.links.filter(l => l.category === c.id);
     return `<section class="panel" style="--accent:var(${accentOf[c.id]})">
       <header><span class="dot" style="--accent:var(${accentOf[c.id]})"></span><h2>${esc(c.name)}</h2><span class="count">${items.length}</span></header>
-      <div class="tiles">${items.map(l => `<a class="tile" href="${esc(l.url)}" target="_blank" rel="noreferrer" style="--accent:var(${accentOf[c.id]})">
+      <div class="tiles">${items.map(l => `<a class="tile" href="${esc(l.url)}" target="_blank" rel="noreferrer" data-track="${esc(l.id)}" style="--accent:var(${accentOf[c.id]})">
         <span class="logo"><img src="${logo(l.id)}" alt="" onerror="this.style.display='none'"></span>
         <span class="txt"><strong>${esc(l.name)}</strong><small>${esc(host(l.url))}</small></span></a>`).join('')}</div>
     </section>`;
