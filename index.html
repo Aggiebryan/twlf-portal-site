@@ -1,49 +1,69 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TWLF Work Portal</title>
   <meta name="description" content="The Woodlands Law Firm work portal">
   <link rel="icon" href="favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260811.6">
-  <link rel="stylesheet" href="workspace.css?v=20260811.6">
+  <link rel="stylesheet" href="styles.css?v=20261111.1">
+  <link rel="stylesheet" href="workspace.css?v=20261111.1">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#"><span class="brandmark">TW</span><span><b>TWLF</b> Portal</span></a>
-    <label class="search"><span>⌕</span><input id="search" placeholder="Search portal…" autocomplete="off"><kbd>/</kbd></label>
-    <div class="actions">
-      <button class="icon-button" id="settings" aria-label="Open settings" title="Settings">⚙</button>
-      <button class="icon-button" id="theme" aria-label="Switch color theme"><span id="themeIcon">☾</span></button>
-      <button class="account-button" id="account">Sign in</button>
-      <button class="add-button" data-add><span>＋</span> Add link</button>
-    </div>
-  </header>
+  <div class="shell">
+    <nav class="rail" aria-label="Portal sections">
+      <a class="mark" href="#" title="TWLF Portal">TW</a>
+      <button class="rail-btn" data-category="all" aria-current="page" title="Dashboard">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg></button>
+      <button class="rail-btn" data-category="govt" title="Courts &amp; filing">
+        <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10m14 11V10M3 10l9-6 9 6"/><path d="M9 21v-6h6v6"/></svg></button>
+      <button class="rail-btn" data-category="reference" title="Research">
+        <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H19v3H6.5A2.5 2.5 0 0 1 4 20.5Z"/></svg></button>
+      <button class="rail-btn" data-category="twlf" title="Firm sites">
+        <svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-7h6v7"/></svg></button>
+      <button class="rail-btn" data-category="ai" title="AI tools">
+        <svg viewBox="0 0 24 24"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M18 16.5 18.8 19 21 19.8 18.8 20.6 18 23l-.8-2.4L15 19.8l2.2-.8Z"/></svg></button>
+      <div class="rail-gap"></div>
+      <button class="rail-btn" id="theme" aria-label="Switch colour theme" title="Switch theme"><span id="themeIcon">☾</span></button>
+      <button class="rail-btn" id="settings" aria-label="Open settings" title="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.9 15.1a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H3.5a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2V3.5a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1.1Z"/></svg></button>
+    </nav>
 
-  <nav class="category-nav" id="categoryNav" aria-label="Portal categories"></nav>
-
-  <main class="workspace">
-    <div class="portal-layout">
-      <div class="portal-main">
-        <div class="workspace-head"><div><h1 id="pageTitle">All resources</h1><p id="pageCount"></p></div><button class="text-button" id="reset" hidden>Restore default links</button></div>
-        <div id="notice"></div>
-        <div id="content"></div>
-        <div class="empty" id="empty" hidden><span>⌕</span><h2>No links found</h2><p>Try another search or add a new destination.</p><button class="add-button" data-add>Add link</button></div>
+    <main class="main">
+      <div class="top">
+        <div class="page-head"><h1 id="pageTitle">All resources</h1><small id="pageCount"></small></div>
+        <nav class="segmented" id="categoryNav" aria-label="Portal categories"></nav>
+        <div class="top-right">
+          <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search" placeholder="Search portal…" autocomplete="off"><kbd>/</kbd></label>
+          <button class="chip" id="account">Sign in</button>
+          <button class="chip solid" data-add>＋ Add link</button>
+        </div>
       </div>
-      <aside class="activity-sidebar" aria-label="Microsoft 365 activity">
-        <div class="activity-head"><div><span class="live-dot"></span><strong>Microsoft 365</strong><small id="activityUpdated">Sign in to connect</small></div><button id="activityRefresh" aria-label="Refresh calendar and email" title="Refresh">↻</button></div>
-        <section class="activity-section"><header><h2>Upcoming</h2><span id="calendarCount"></span></header><div id="calendarList" class="activity-list"><div class="activity-empty">Your upcoming calendar events will appear here.</div></div></section>
-        <section class="activity-section"><header><h2>Recent email</h2><span>10</span></header><div id="mailList" class="activity-list"><div class="activity-empty">Your ten newest messages will appear here.</div></div></section>
-        <button class="activity-signin" id="activitySignIn">Sign in with Microsoft 365</button>
-      </aside>
-    </div>
-  </main>
+
+      <div id="notice"></div>
+      <div class="hero" id="hero"></div>
+
+      <div class="board">
+        <div class="board-main">
+          <div class="board-head"><button class="text-button" id="reset" hidden>Restore default layout</button></div>
+          <div id="content"></div>
+          <div class="empty" id="empty" hidden><h2>No links found</h2><p>Try another search, or add a new destination.</p><button class="chip solid" data-add>Add link</button></div>
+        </div>
+
+        <aside class="activity-sidebar" aria-label="Microsoft 365 activity">
+          <div class="activity-head"><div><span class="live-dot"></span><strong>Microsoft 365</strong><small id="activityUpdated">Sign in to connect</small></div><button id="activityRefresh" aria-label="Refresh calendar and email" title="Refresh">↻</button></div>
+          <section class="activity-section"><header><h2>Upcoming</h2><span id="calendarCount"></span></header><div id="calendarList" class="activity-list"><div class="activity-empty">Your upcoming calendar events will appear here.</div></div></section>
+          <section class="activity-section"><header><h2>Recent email</h2><span>10</span></header><div id="mailList" class="activity-list"><div class="activity-empty">Your ten newest messages will appear here.</div></div></section>
+          <button class="activity-signin" id="activitySignIn">Sign in with Microsoft 365</button>
+        </aside>
+      </div>
+    </main>
+  </div>
 
   <div class="modal-backdrop" id="backdrop" hidden>
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button class="close" id="close" aria-label="Close">×</button>
-      <h2 id="modalTitle">Add a portal link</h2><p id="modalIntro">Add a destination to this browser’s TWLF portal.</p>
+      <h2 id="modalTitle">Add a portal link</h2><p id="modalIntro">Add a destination to the TWLF portal.</p>
       <p class="shared-note" id="sharedNote" hidden>This is a firm-wide link, so its name, address and category are the same for everyone. Card size and Most Used are yours alone.</p>
       <form id="form">
         <label>NAME<input name="name" placeholder="e.g. Benefits Portal" required maxlength="60"></label>
@@ -68,14 +88,15 @@
       <div class="module-list"><strong>Modules</strong><label class="check-label"><input type="checkbox" data-module="microsoft365" checked> MICROSOFT 365 ACTIVITY</label></div>
       <form id="categoryForm" class="category-form"><strong>Add a category</strong><div><input name="name" placeholder="Category name" required maxlength="40"><input name="color" type="color" value="#287b67" aria-label="Category color"><button class="save">Add</button></div></form>
       <div class="account-panel"><div><strong id="accountName">Your portal</strong><p id="accountStatus">Not signed in</p></div><button class="account-button" id="settingsAccount">Sign in</button></div>
-      <p class="sync-note">Sign in with your woodlands.law Microsoft 365 account. Portal preferences are currently saved on this device.</p>
+      <p class="sync-note">Sign in with your woodlands.law Microsoft 365 account to carry your layout between devices.</p>
     </section>
   </div>
+
   <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js" defer></script>
-  <script src="auth.js?v=20260811.6" defer></script>
-  <script src="settings.js?v=20260811.6" defer></script>
-  <script src="catalog.js?v=20260811.6" defer></script>
-  <script src="app.js?v=20260811.6" defer></script>
-  <script src="modules.js?v=20260811.6" defer></script>
+  <script src="auth.js?v=20261111.1" defer></script>
+  <script src="settings.js?v=20261111.1" defer></script>
+  <script src="catalog.js?v=20261111.1" defer></script>
+  <script src="app.js?v=20261111.1" defer></script>
+  <script src="modules.js?v=20261111.1" defer></script>
 </body>
 </html>

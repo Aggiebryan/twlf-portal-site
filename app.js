@@ -5,6 +5,14 @@
 
 const mostUsedCategory = { id: 'most-used', name: 'Most Used', color: '#d9623f' };
 
+/* ---------------------------------------------------------------
+ * HERO ROW — edit these two lists to choose what each card holds.
+ * "Most Used" is not listed: it is measured from real clicks.
+ * --------------------------------------------------------------- */
+const COURT_LINKS = ['t3', 't10', 't18', 't13', 't15', 't20'];
+const WOODLANDS_LAW = ['t27', 't26', 't31', 't30', 't28', 't29'];
+const HERO_SLOTS = 6;
+
 let catalog = { version: 1, categories: [], defaultMostUsed: [], links: [] };
 let prefs = window.twlfPrefs.get();
 let categories = [mostUsedCategory];
@@ -15,6 +23,7 @@ let categoryOrder = ['most-used'];
 let linkOrder = {};
 let sizes = {};
 let displayColumns = 2;
+let usage = {};
 
 let active = 'all';
 let query = '';
@@ -53,19 +62,20 @@ function adoptPrefs() {
   mostUsedOrder = (prefs.mostUsedOrder || []).map(String);
   linkOrder = prefs.linkOrder || {};
   sizes = prefs.sizes || {};
+  usage = prefs.usage || {};
   displayColumns = Number(prefs.displayColumns) || 2;
   const known = categories.map(category => category.id);
   const saved = (prefs.categoryOrder || []).filter(id => known.includes(id));
   categoryOrder = ['most-used', ...saved.filter(id => id !== 'most-used'),
     ...known.filter(id => id !== 'most-used' && !saved.includes(id))];
-  applyTheme(prefs.theme || 'light');
+  applyTheme(prefs.theme || 'dark');
 }
 
 function save() {
   window.twlfPrefs.set({
     customLinks: links.filter(isPersonalLink),
     customCategories: prefs.customCategories || [],
-    mostUsed, mostUsedOrder, categoryOrder, linkOrder, sizes, displayColumns,
+    mostUsed, mostUsedOrder, categoryOrder, linkOrder, sizes, displayColumns, usage,
     theme: document.documentElement.dataset.theme,
     modules: prefs.modules,
   });
@@ -91,7 +101,7 @@ function linkCard(link, index, context) {
     <button class="card-drag" draggable="true" aria-label="Move ${safeName}" title="Drag to reorder">⠿</button>
     ${removable?`<button class="remove" data-remove="${link.id}" data-remove-context="${context}" aria-label="Remove ${safeName}" title="${removeTitle}">×</button>`:''}
     <button class="edit" data-edit="${link.id}" data-edit-context="${context}" aria-label="Edit ${safeName}" title="Edit size and Most Used">✎</button>
-    <a href="${safeUrl}" target="_blank" rel="noreferrer">
+    <a href="${safeUrl}" target="_blank" rel="noreferrer" data-track="${link.id}">
       <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.display='none'" onload="if(this.naturalWidth)this.parentNode.classList.add('has-logo')"></span>
       <span class="link-copy"><strong>${safeName}</strong><small class="link-address">${safeHost}</small><small class="description">${description}</small></span><span class="open">↗</span>
     </a></article>`;
@@ -102,6 +112,31 @@ function matching(categoryId) {
   const order = categoryId==='most-used' ? mostUsedOrder : (linkOrder[categoryId] || []);
   if (!order.length) return found;
   return [...found].sort((a,b)=>{const ai=order.indexOf(String(a.id)),bi=order.indexOf(String(b.id));return (ai<0?9999:ai)-(bi<0?9999:bi)});
+}
+
+function renderHero() {
+  const byId = Object.fromEntries(links.map(link => [String(link.id), link]));
+  const ranked = Object.keys(usage).filter(id => byId[id]).sort((a, b) => usage[b] - usage[a]);
+  // Until someone has clicked around, fall back to their pinned set.
+  const top = [...ranked, ...mostUsed.filter(id => !ranked.includes(id))].slice(0, HERO_SLOTS);
+  const groups = [
+    { name: 'Most Used',     ids: top,           accent: 'var(--teal)'  },
+    { name: 'Court Links',   ids: COURT_LINKS,   accent: 'var(--pink)'  },
+    { name: 'Woodlands Law', ids: WOODLANDS_LAW, accent: 'var(--amber)' },
+  ];
+  document.querySelector('#hero').innerHTML = groups.map(group => {
+    const items = group.ids.map(id => byId[String(id)]).filter(Boolean).slice(0, HERO_SLOTS);
+    const body = items.length
+      ? `<div class="feature-links">${items.map(link => `
+          <a class="mini" href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer"
+             data-track="${escapeHtml(String(link.id))}" title="${escapeHtml(link.name)}">
+            <img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.visibility='hidden'">
+            <span>${escapeHtml(link.name)}</span>${usage[link.id] ? `<b>${usage[link.id]}</b>` : ''}
+          </a>`).join('')}</div>`
+      : '<p class="empty-note">Nothing picked for this group yet.</p>';
+    return `<article class="feature" style="--accent:${group.accent}">
+      <span class="badge">${escapeHtml(group.name)}</span>${body}</article>`;
+  }).join('');
 }
 
 function render() {
@@ -117,6 +152,9 @@ function render() {
   document.querySelector('#content').className = active === 'all' ? 'dashboard-grid masonry-board' : 'single-category';
   document.querySelector('#content').innerHTML = sections.map(({category,items}) => `<section class="category-panel ${category.id==='most-used'?'pinned-panel':''}" data-panel="${category.id}" style="--category:${category.color}"><header draggable="${active==='all'&&category.id!=='most-used'}"><span class="drag-handle" title="${category.id==='most-used'?'Pinned':'Drag to move category'}">${category.id==='most-used'?'⌖':'⠿'}</span><span class="category-dot"></span><h2>${category.name}</h2><small>${items.length}</small></header><div class="link-grid">${items.map((link,index)=>linkCard(link,index,category.id)).join('')}</div></section>`).join('');
   document.querySelector('#empty').hidden = count > 0;
+  document.querySelectorAll('.rail-btn[data-category]').forEach(button =>
+    button.toggleAttribute('aria-current', button.dataset.category === active));
+  if (active === 'all' && !query) renderHero(); else document.querySelector('#hero').innerHTML = '';
 }
 
 document.addEventListener('click', event => {
@@ -144,6 +182,15 @@ document.addEventListener('click', event => {
   }
   const editButton = event.target.closest('[data-edit]');
   if (editButton) { event.preventDefault(); openModal(links.find(link=>String(link.id)===editButton.dataset.edit),editButton.dataset.editContext); }
+});
+
+document.addEventListener('click', event => {
+  const opened = event.target.closest('[data-track]');
+  if (!opened) return;
+  usage = { ...usage, [opened.dataset.track]: (usage[opened.dataset.track] || 0) + 1 };
+  // Persist directly: opening a link is not a layout change, so it should not
+  // light up "Restore default layout" the way save() does.
+  window.twlfPrefs.set({ usage });
 });
 
 document.querySelector('#search').addEventListener('input', event => { query=event.target.value.trim().toLowerCase(); render(); });

@@ -30,12 +30,13 @@ const SAVE_DEBOUNCE_MS = 900;
 
 const defaultPrefs = () => ({
   version: 1,
-  theme: 'light',
+  theme: 'dark',
   displayColumns: 2,
   categoryOrder: [],
   mostUsed: null,      // null means "not chosen yet" -> fall back to firm default
   mostUsedOrder: [],
   sizes: {},           // { [linkId]: { category: 'standard', mostUsed: 'large' } }
+  usage: {},           // { [linkId]: timesOpened } -> drives the Most Used card
   modules: { microsoft365: true },
   customLinks: [],
   customCategories: [],
