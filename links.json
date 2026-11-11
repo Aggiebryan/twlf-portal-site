@@ -223,32 +223,11 @@
       "color": "#D4AC0D"
     },
     {
-      "id": "t26",
-      "name": "Estate Site",
-      "url": "https://woodlandslawestate.com",
-      "category": "twlf",
-      "color": "#1E8449"
-    },
-    {
       "id": "t27",
       "name": "Woodlands Law",
       "url": "https://Woodlands.law",
       "category": "twlf",
       "color": "#196F3D"
-    },
-    {
-      "id": "t28",
-      "name": "WordPress",
-      "url": "https://woodlandslaw.info/wp/",
-      "category": "twlf",
-      "color": "#21759B"
-    },
-    {
-      "id": "t29",
-      "name": "N8N",
-      "url": "https://n8n.twlf.dev/",
-      "category": "twlf",
-      "color": "#EA4B71"
     },
     {
       "id": "t30",
@@ -291,13 +270,6 @@
       "url": "https://www.webwinder.com/calculators/post_judge_calc.html",
       "category": "reference",
       "color": "#C0392B"
-    },
-    {
-      "id": "t36",
-      "name": "Houston Incidents",
-      "url": "https://dmwilson.info/",
-      "category": "reference",
-      "color": "#922B21"
     },
     {
       "id": "t37",
@@ -396,20 +368,6 @@
       "url": "https://quillbot.com",
       "category": "ai",
       "color": "#499557"
-    },
-    {
-      "id": "t51",
-      "name": "WLF-AI",
-      "url": "https://wlf-ai.com/",
-      "category": "ai",
-      "color": "#7D3C98"
-    },
-    {
-      "id": "t52",
-      "name": "N8N Auto",
-      "url": "https://n8n.twlf.dev/",
-      "category": "ai",
-      "color": "#EA4B71"
     },
     {
       "id": "t53",
@@ -533,7 +491,7 @@
     {
       "id": "t77",
       "name": "TexasBarCLE",
-      "url": "http://www.texasbarcle.com/CLE/Home.asp",
+      "url": "https://www.texasbarcle.com/CLE/Home.asp",
       "category": "state-bar",
       "color": "#7D3C98"
     },

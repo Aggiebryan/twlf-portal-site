@@ -10,7 +10,7 @@ const mostUsedCategory = { id: 'most-used', name: 'Most Used', color: '#d9623f' 
  * "Most Used" is not listed: it is measured from real clicks.
  * --------------------------------------------------------------- */
 const COURT_LINKS = ['t3', 't10', 't18', 't13', 't15', 't20', 't16', 't22'];
-const WOODLANDS_LAW = ['t27', 't26', 't31', 't30', 't28', 't29', 't4', 't7'];
+const WOODLANDS_LAW = ['t27', 't31', 't30', 't4', 't7', 't1', 't2'];
 const HERO_SLOTS = 8;
 
 let catalog = { version: 1, categories: [], defaultMostUsed: [], links: [] };
