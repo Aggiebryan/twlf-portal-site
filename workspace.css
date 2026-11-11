@@ -172,3 +172,43 @@ html[data-theme=light] .link-card:hover .card-drag{background:rgba(0,0,0,.08)}
   .link-grid,#content.single-category .link-grid{--card-min:140px}
   .feature-links{grid-template-columns:repeat(3,1fr)}
 }
+
+/* ---------------- single-category pages ----------------
+   Every card here is the full, descriptive treatment: a large logo, the name,
+   the address, and the description beneath. Per-user card sizes deliberately
+   do not apply — those are for packing the dashboard, and this view is for
+   reading. The masonry spans are switched off since every card is one shape. */
+#content.single-category .link-grid{
+  --card-min:304px;grid-auto-flow:row;grid-auto-rows:auto;row-gap:10px;column-gap:10px;
+}
+#content.single-category .link-card,
+#content.single-category .link-card.size-small,
+#content.single-category .link-card.size-large{
+  height:auto;min-height:92px;grid-row:auto;margin-bottom:0;
+}
+#content.single-category .link-card>a{
+  flex-direction:row;align-items:flex-start;gap:13px;padding:14px;height:auto;
+}
+#content.single-category .logo,
+#content.single-category .link-card.size-small .logo,
+#content.single-category .link-card.size-large .logo{width:52px;height:52px;border-radius:14px}
+#content.single-category .logo img,
+#content.single-category .link-card.size-small .logo img,
+#content.single-category .link-card.size-large .logo img{width:36px;height:36px}
+#content.single-category .fallback{font-size:14px}
+#content.single-category .link-copy{align-self:stretch;gap:2px;flex:1}
+#content.single-category .link-copy strong,
+#content.single-category .link-card.size-small .link-copy strong,
+#content.single-category .link-card.size-large .link-copy strong{font-size:14px;-webkit-line-clamp:2}
+/* These beat both the size-small blanket rule and the narrow-card container
+   queries, which exist to shed content the dashboard has no room for. */
+#content.single-category .link-card .link-address{
+  display:block;font-size:10.5px;color:var(--faint);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#content.single-category .link-card .description{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  margin-top:4px;font-size:11px;line-height:1.4;color:var(--muted);
+}
+#content.single-category .link-card .open{align-self:flex-start;margin-left:0;font-size:12px}
+@media(max-width:620px){#content.single-category .link-grid{--card-min:100%}}
