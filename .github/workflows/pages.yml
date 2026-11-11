@@ -18,8 +18,11 @@ permissions:
   pages: write
   id-token: write
 
+# Concurrency groups are scoped to the repository, not to a workflow, so this
+# must NOT be called "pages": that is the group the auto-generated pipeline
+# uses, and its wedged run would hold this one in the queue behind it.
 concurrency:
-  group: pages
+  group: portal-pages-deploy
   cancel-in-progress: true
 
 jobs:
