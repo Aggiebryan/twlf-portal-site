@@ -17,6 +17,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read          # to confirm the artifact exists before deploying it
 
 # Concurrency groups are scoped to the repository, not to a workflow, so this
 # must NOT be called "pages": that is the group the auto-generated pipeline
@@ -51,6 +52,28 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
+      # actions/deploy-pages asks the API for the artifact about half a second
+      # after the upload reports success, and the metadata is not always
+      # visible that fast: runs da69781 and 8d85ceb both died on "Found 0
+      # artifact(s)" for an artifact whose upload had just been finalized.
+      # Waiting for the API to agree it exists turns that race into a pause.
+      - name: Wait for the artifact to be visible to the API
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          for attempt in $(seq 1 30); do
+            count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+                      --jq '[.artifacts[] | select(.name == "github-pages")] | length' || echo 0)
+            if [ "${count:-0}" -gt 0 ]; then
+              echo "artifact visible after ${attempt} check(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "the github-pages artifact never became visible to the API"
+          exit 1
 
       - id: deployment
         uses: actions/deploy-pages@v4
