@@ -43,6 +43,28 @@ const heroGroupOf = id => {
   if (catalogHeroInUse()) return (link && link.heroGroup) || '';
   return heroKeys().find(k => k !== 'most-used' && heroMembers(k).includes(String(id))) || '';
 };
+/* A link can be barred from the Most Used card however often it is opened —
+ * social accounts and the like. Clicks are still counted, the tile is just
+ * never offered. Firm-wide when the list has a NoMostUsed column, otherwise
+ * kept per person, exactly as hero membership works. */
+const truthy = value => value === true || /^(1|true|yes|y)$/i.test(String(value ?? ''));
+const catalogBlockInUse = () => window.twlfCatalog.hasBlockColumn() || links.some(link => truthy(link.noMostUsed));
+const blockedFromMostUsed = () => {
+  const mine = (prefs.mostUsedBlocked || []).map(String);
+  if (!catalogBlockInUse()) return mine;
+  // Your own links never reach SharePoint, so their block always stays local.
+  const firm = links.filter(link => truthy(link.noMostUsed)).map(link => String(link.id));
+  const local = mine.filter(id => isPersonalLink(links.find(link => String(link.id) === id)));
+  return [...firm, ...local];
+};
+const isBlockedFromMostUsed = id => blockedFromMostUsed().includes(String(id));
+function setMostUsedBlock(id, blocked) {
+  const next = blockedFromMostUsed().filter(x => x !== String(id));
+  if (blocked) next.unshift(String(id));
+  prefs.mostUsedBlocked = next;
+  return next;
+}
+
 const heroStyle = key => ({ ...HERO_DEFAULTS[key], ...((prefs.heroGroups || {})[key] || {}) });
 const heroSlots = key => {
   const size = HERO_SIZES[heroStyle(key).size] || HERO_SIZES.medium;
@@ -78,9 +100,79 @@ const officialLogoExtensions = {
   t76:'jpg',t77:'png',t78:'png',t80:'png',t81:'jpg',t82:'png'
 };
 const officialLogo = id => `logos/${id}.${officialLogoExtensions[id] || 'ico'}`;
-const escapeHtml = value => { const node=document.createElement('div'); node.textContent=value; return node.innerHTML; };
 
-const isMostUsed = id => mostUsed.includes(String(id));
+/* Where to look for a link's icon, best first. A custom address wins, then the
+ * logo bundled with the site, then the site's own favicon, then DuckDuckGo's
+ * icon service — which 404s for a domain it has nothing for, so a site with no
+ * icon anywhere still falls through to the initials rather than a grey globe.
+ * Each candidate is tried in turn as an <img> src; the first that decodes wins. */
+function iconCandidates(link) {
+  const chain = [];
+  if (link.logo) chain.push(link.logo);
+  chain.push(officialLogo(link.id));
+  const host = hostname(link.url);
+  if (host && host.includes('.') && !/\s/.test(host)) {
+    if (!link.logo) chain.push(`https://${host}/favicon.ico`);
+    chain.push(`https://icons.duckduckgo.com/ip3/${host}.ico`);
+  }
+  return chain.filter((url, index) => chain.indexOf(url) === index);
+}
+/* src plus the rest of the chain, for the error handler below. */
+function iconAttrs(link) {
+  const [first, ...rest] = iconCandidates(link);
+  return `src="${escapeHtml(first)}" data-icon-chain="${escapeHtml(JSON.stringify(rest))}"`;
+}
+
+/* An <img> error does not bubble, so it is caught on the way down instead of
+ * with an inline onerror per card. */
+document.addEventListener('error', event => {
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement) || !img.hasAttribute('data-icon-chain')) return;
+  let chain = [];
+  try { chain = JSON.parse(img.dataset.iconChain) || []; } catch { chain = []; }
+  const next = chain.shift();
+  img.dataset.iconChain = JSON.stringify(chain);
+  // Out of candidates: stand down and let whatever is behind the img show.
+  if (!next) { img.style.display = 'none'; img.style.visibility = 'hidden'; return; }
+  img.src = next;
+}, true);
+document.addEventListener('load', event => {
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement) || !img.hasAttribute('data-icon-chain')) return;
+  if (img.naturalWidth > 1) img.parentNode?.classList.add('has-logo');
+  else img.dispatchEvent(new Event('error'));
+}, true);
+
+/* Try a URL as an image and report whether it actually loaded. Nothing is read
+ * back from the response, so this works cross-origin with no CORS headers. */
+const probeIcon = (url, timeout = 3500) => new Promise(resolve => {
+  const img = new Image();
+  const finish = ok => { img.onload = img.onerror = null; clearTimeout(timer); resolve(ok); };
+  const timer = setTimeout(() => finish(false), timeout);
+  img.onload = () => finish(img.naturalWidth > 1);
+  img.onerror = () => finish(false);
+  img.src = url;
+});
+/* Settle on a real icon address at the moment a link is added, so the whole
+ * firm gets it from the catalog instead of each browser hunting for it. */
+async function findIcon(url) {
+  const host = hostname(url);
+  if (!host || !host.includes('.')) return '';
+  for (const candidate of [`https://${host}/favicon.ico`, `https://icons.duckduckgo.com/ip3/${host}.ico`]) {
+    if (await probeIcon(candidate)) return candidate;
+  }
+  return '';
+}
+/* Quotes are escaped as well as the angle brackets, because almost every use of
+ * this is inside an attribute — a link name or a JSON payload holding a " would
+ * otherwise close the attribute early and spill into the markup. */
+const escapeHtml = value => {
+  const node = document.createElement('div');
+  node.textContent = value;
+  return node.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+
+const isMostUsed = id => mostUsed.includes(String(id)) && !isBlockedFromMostUsed(id);
 function sizeFor(link, context) {
   const entry = sizes[link.id] || {};
   const value = context === 'most-used' ? (entry.mostUsed || entry.category) : entry.category;
@@ -113,6 +205,7 @@ function save() {
     customCategories: prefs.customCategories || [],
     mostUsed, mostUsedOrder, categoryOrder, linkOrder, sizes, displayColumns, usage,
     heroGroups: prefs.heroGroups, heroMembers: prefs.heroMembers,
+    mostUsedBlocked: prefs.mostUsedBlocked,
     theme: document.documentElement.dataset.theme,
     modules: prefs.modules,
   });
@@ -139,7 +232,7 @@ function linkCard(link, index, context) {
     ${removable?`<button class="remove" data-remove="${link.id}" data-remove-context="${context}" aria-label="Remove ${safeName}" title="${removeTitle}">×</button>`:''}
     <button class="edit" data-edit="${link.id}" data-edit-context="${context}" aria-label="Edit ${safeName}" title="Edit size and Most Used">✎</button>
     <a href="${safeUrl}" target="_blank" rel="noreferrer" data-track="${link.id}">
-      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.display='none'" onload="if(this.naturalWidth)this.parentNode.classList.add('has-logo')"></span>
+      <span class="logo"><span class="fallback">${safeName.slice(0,2).toUpperCase()}</span><img ${iconAttrs(link)} alt=""></span>
       <span class="link-copy"><strong>${safeName}</strong><small class="link-address">${safeHost}</small><small class="description">${description}</small></span><span class="open">↗</span>
     </a></article>`;
 }
@@ -154,9 +247,13 @@ function matching(categoryId) {
 function renderHero() {
   const byId = Object.fromEntries(links.map(link => [String(link.id), link]));
   // Counted for ranking only — the tally is deliberately not shown on the tile.
-  const ranked = Object.keys(usage).filter(id => byId[id]).sort((a, b) => usage[b] - usage[a]);
+  // Barred links drop out here, so a heavily used one simply never surfaces.
+  const barred = new Set(blockedFromMostUsed());
+  const ranked = Object.keys(usage)
+    .filter(id => byId[id] && !barred.has(String(id)))
+    .sort((a, b) => usage[b] - usage[a]);
   const sources = {
-    'most-used': [...ranked, ...mostUsed.filter(id => !ranked.includes(id))],
+    'most-used': [...ranked, ...mostUsed.filter(id => !ranked.includes(id) && !barred.has(String(id)))],
     'court': heroMembers('court'),
     'woodlands': heroMembers('woodlands'),
   };
@@ -168,7 +265,7 @@ function renderHero() {
       ? `<div class="feature-links">${items.map(link => `
           <a class="mini" href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer"
              data-track="${escapeHtml(String(link.id))}" title="${escapeHtml(link.name)}">
-            <span class="mini-plate"><img src="${escapeHtml(link.logo || officialLogo(link.id))}" alt="" onerror="this.style.visibility='hidden'"></span>
+            <span class="mini-plate"><img ${iconAttrs(link)} alt=""></span>
             <span>${escapeHtml(link.name)}</span>
           </a>`).join('')}</div>`
       : '<p class="empty-note">Nothing picked for this group yet.</p>';
@@ -218,7 +315,8 @@ document.addEventListener('click', async event => {
 function updatePublishHero() {
   const button = document.querySelector('#publishHero');
   if (!button) return;
-  button.hidden = !(catalogWritable() && window.twlfCatalog.hasHeroColumn());
+  button.hidden = !(catalogWritable()
+    && (window.twlfCatalog.hasHeroColumn() || window.twlfCatalog.hasBlockColumn()));
   const descriptions = document.querySelector('#publishDescriptions');
   if (descriptions) descriptions.hidden = !catalogWritable();
 }
@@ -226,15 +324,20 @@ function updatePublishHero() {
 document.addEventListener('click', async event => {
   if (!event.target.closest('#publishHero')) return;
   const button = document.querySelector('#publishHero');
-  if (!window.confirm('Publish these hero cards to the whole firm? Everyone will see the same membership.')) return;
-  // Send every catalogue link, so links no longer in a card are cleared too.
+  if (!window.confirm('Publish these hero cards to the whole firm? Everyone will see the same card membership and the same Most Used exclusions.')) return;
+  // Send every catalogue link, so links no longer in a card — or no longer
+  // barred from Most Used — are cleared too.
+  const barred = new Set(blockedFromMostUsed());
   const assignments = {};
-  for (const link of links) if (link.itemId) assignments[link.itemId] = heroGroupOf(link.id);
+  for (const link of links) {
+    if (!link.itemId) continue;
+    assignments[link.itemId] = { heroGroup: heroGroupOf(link.id), noMostUsed: barred.has(String(link.id)) };
+  }
   button.disabled = true;
   try {
     const n = await window.twlfCatalog.publishHeroGroups(assignments,
       (done, total) => { button.textContent = `Publishing ${done}/${total}…`; });
-    notice(`Hero card membership published to the firm across ${n} links.`);
+    notice(`Hero cards and Most Used rules published to the firm across ${n} links.`);
   } catch (error) { notice(`Could not publish hero cards: ${error.message}`, true); }
   button.disabled = false; button.textContent = 'Publish hero cards to the firm';
   renderHero();
@@ -341,7 +444,7 @@ function openModal(link=null,context=null){
   const form=document.querySelector('#form');form.reset();
   const shared = Boolean(link) && !isPersonalLink(link) && !catalogWritable();
   document.querySelector('#modalTitle').textContent=link?'Edit portal link':'Add a portal link';
-  document.querySelector('#modalIntro').textContent=link?'Its category card and Most Used card can have different sizes.':'Adds a link to your own portal. Firm-wide links are managed in the shared catalog.';
+  document.querySelector('#modalIntro').textContent=link?'Card size, hero card and Most Used are set here.':'Adds a link to your own portal. Firm-wide links are managed in the shared catalog.';
   document.querySelector('#saveLink').textContent=link?'Save changes':'Add link';
   if(link){
     form.elements.name.value=link.name;form.elements.url.value=link.url;
@@ -350,6 +453,7 @@ function openModal(link=null,context=null){
     form.elements.size.value=sizeFor(link,'category');
     const group=heroGroupOf(link.id);
     [...form.elements.heroGroup].forEach(radio=>{radio.checked=radio.value===group});
+    form.elements.noMostUsed.checked=isBlockedFromMostUsed(link.id);
   }
   setSharedFieldsEnabled(!shared);
   // The radios carry whatever the cards are currently called.
@@ -379,21 +483,34 @@ document.querySelector('#form').addEventListener('submit',async event=>{
   // shared catalogue is writable, so the firm sees one set of cards.
   sizes={...sizes,[id]:{category:data.size||'standard'}};
   const group=data.heroGroup||'';
+  const barred=data.noMostUsed==='on';
   const toCatalog=!personal&&!sharedLocked&&window.twlfCatalog.hasHeroColumn();
+  const barredToCatalog=!personal&&!sharedLocked&&window.twlfCatalog.hasBlockColumn();
   if(!toCatalog)setHeroMembership(id,group);
+  if(!barredToCatalog)setMostUsedBlock(id,barred);
 
   if(sharedLocked){
     save();render();closeModal();
-    notice(`Card size and hero card updated for “${existing.name}”.`);
+    notice(`Card size, hero card and Most Used rule updated for “${existing.name}”.`);
     return;
   }
 
   if(!/^https?:\/\//i.test(data.url||''))data.url=`https://${data.url||''}`;
   if(data.logo && !/^https?:\/\//i.test(data.logo))data.logo=`https://${data.logo}`;
+  // No logo given on a brand-new link: go and find the site's own icon so the
+  // card does not start life as a pair of initials.
+  if(!existing && !(data.logo||'').trim()){
+    const button=document.querySelector('#saveLink');
+    const label=button.textContent;
+    button.textContent='Finding icon…';button.disabled=true;
+    try{data.logo=await findIcon(data.url)}catch{data.logo=''}
+    button.textContent=label;button.disabled=false;
+  }
   const category=categoryById(data.category);
   const entry={id,name:(data.name||'').trim(),url:data.url,logo:(data.logo||'').trim(),
     description:(data.description||'').trim(),category:data.category,color:category?.color||'#75808a'};
   if(toCatalog)entry.heroGroup=group;
+  if(barredToCatalog)entry.noMostUsed=barred;
 
   try{
     if(personal){
@@ -411,7 +528,7 @@ document.querySelector('#form').addEventListener('submit',async event=>{
 document.querySelector('#theme').addEventListener('click',()=>{applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');save()});
 document.querySelector('#reset').addEventListener('click',()=>{
   if(!window.confirm('Reset your layout, sizes and Most Used to the firm defaults?'))return;
-  window.twlfPrefs.set({mostUsed:null,mostUsedOrder:[],categoryOrder:[],linkOrder:{},sizes:{},customLinks:[],displayColumns:2,heroGroups:{},heroMembers:null});
+  window.twlfPrefs.set({mostUsed:null,mostUsedOrder:[],categoryOrder:[],linkOrder:{},sizes:{},customLinks:[],displayColumns:2,heroGroups:{},heroMembers:null,mostUsedBlocked:[]});
   adoptPrefs();renderHeroSettings();columnsInput.value=displayColumns;document.querySelector('#columnCount').value=displayColumns;
   document.querySelector('#reset').hidden=true;render();
 });

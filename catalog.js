@@ -22,11 +22,12 @@ const GRAPH = 'https://graph.microsoft.com/v1.0';
 const LINK_COLUMNS = {
   Title: 'name', LinkId: 'id', LinkUrl: 'url', LinkCategory: 'category',
   LinkColor: 'color', LinkDescription: 'description', LinkLogo: 'logo',
-  HeroGroup: 'heroGroup',
+  HeroGroup: 'heroGroup', NoMostUsed: 'noMostUsed',
 };
-/* Columns the site works without. HeroGroup is here so a tenant that has not
- * added it yet still loads, just without firm-wide hero membership. */
-const OPTIONAL_COLUMNS = new Set(['description', 'logo', 'sortOrder', 'heroGroup']);
+/* Columns the site works without. HeroGroup and NoMostUsed are here so a tenant
+ * that has not added them yet still loads — just with hero membership and the
+ * Most Used block kept per person instead of firm-wide. */
+const OPTIONAL_COLUMNS = new Set(['description', 'logo', 'sortOrder', 'heroGroup', 'noMostUsed']);
 const CATEGORY_COLUMNS = {
   Title: 'name', CategoryId: 'id', CategoryColor: 'color', SortOrder: 'sortOrder',
 };
@@ -93,7 +94,7 @@ const toFields = (record, list, keys) => keys.reduce((fields, key) => {
   return fields;
 }, {});
 
-const LINK_KEYS = ['name','id','url','category','color','description','logo','heroGroup'];
+const LINK_KEYS = ['name','id','url','category','color','description','logo','heroGroup','noMostUsed'];
 const CATEGORY_KEYS = ['name','id','color','sortOrder'];
 
 async function pull() {
@@ -155,6 +156,9 @@ window.twlfCatalog = {
   },
 
   hasHeroColumn: () => Boolean(lists.links && lists.links.fields.heroGroup),
+  /* The NoMostUsed column marks links that must never reach the Most Used card,
+   * no matter how often they are opened. Without it the block is per person. */
+  hasBlockColumn: () => Boolean(lists.links && lists.links.fields.noMostUsed),
   bundled: () => bundled,
 
   /* Fill in descriptions from the bundled catalogue. Only ever writes where
@@ -172,18 +176,28 @@ window.twlfCatalog = {
     return targets.length;
   },
 
-  /* Write the current hero membership to the list so it is the same for
-   * everyone. Sequential: SharePoint throttles bursts and this runs rarely. */
+  /* Write the current hero membership and Most Used blocks to the list so they
+   * are the same for everyone. Each assignment is either a hero group string or
+   * { heroGroup, noMostUsed }; only the columns the list actually has are sent,
+   * so this still works on a tenant that added one column but not the other.
+   * Sequential: SharePoint throttles bursts and this runs rarely. */
   async publishHeroGroups(assignments, onProgress) {
-    if (!lists.links?.fields?.heroGroup) throw new Error('The Portal Links list has no HeroGroup column yet.');
+    const hasHero = Boolean(lists.links?.fields?.heroGroup);
+    const hasBlock = Boolean(lists.links?.fields?.noMostUsed);
+    if (!hasHero && !hasBlock) throw new Error('The Portal Links list has no HeroGroup or NoMostUsed column yet.');
     const entries = Object.entries(assignments);
     let done = 0;
-    for (const [itemId, group] of entries) {
-      await this.updateLink(itemId, { heroGroup: group }, { quiet: true });
+    for (const [itemId, value] of entries) {
+      const assignment = typeof value === 'string' ? { heroGroup: value } : (value || {});
+      const patch = {};
+      if (hasHero && assignment.heroGroup !== undefined) patch.heroGroup = assignment.heroGroup;
+      if (hasBlock && assignment.noMostUsed !== undefined) patch.noMostUsed = Boolean(assignment.noMostUsed);
+      if (!Object.keys(patch).length) continue;
+      await this.updateLink(itemId, patch, { quiet: true });
       onProgress?.(++done, entries.length);
     }
     await this.sync();
-    return entries.length;
+    return done;
   },
 
   async removeLink(itemId) {

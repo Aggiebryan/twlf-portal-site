@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TWLF Work Portal</title>
   <meta name="description" content="The Woodlands Law Firm work portal">
-  <link rel="icon" href="favicon.ico?v=20261111.11" sizes="16x16 32x32 48x48">
-  <link rel="stylesheet" href="styles.css?v=20261111.11">
-  <link rel="stylesheet" href="workspace.css?v=20261111.11">
+  <link rel="icon" href="favicon.ico?v=20261112.1" sizes="16x16 32x32 48x48">
+  <link rel="stylesheet" href="styles.css?v=20261112.1">
+  <link rel="stylesheet" href="workspace.css?v=20261112.1">
 </head>
 <body>
   <div class="shell">
@@ -64,7 +64,7 @@
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button class="close" id="close" aria-label="Close">×</button>
       <h2 id="modalTitle">Add a portal link</h2><p id="modalIntro">Add a destination to the TWLF portal.</p>
-      <p class="shared-note" id="sharedNote" hidden>This is a firm-wide link, so its name, address and category are the same for everyone. Card size and Most Used are yours alone.</p>
+      <p class="shared-note" id="sharedNote" hidden>This is a firm-wide link, so its name, address and category are the same for everyone. Card size, hero card and Most Used are yours alone until you sign in.</p>
       <form id="form">
         <label>NAME<input name="name" placeholder="e.g. Benefits Portal" required maxlength="60"></label>
         <label>WEB ADDRESS<input name="url" placeholder="https://portal.example.com" required inputmode="url"></label>
@@ -72,10 +72,11 @@
         <label>DESCRIPTION <span class="optional">OPTIONAL</span><textarea name="description" placeholder="What this resource is used for" maxlength="160"></textarea></label>
         <label>CATEGORY<select name="category" id="categorySelect"></select></label>
         <label>CARD SIZE<select name="size"><option value="standard">Medium</option><option value="large">Large</option><option value="small">Small</option></select></label>
-        <fieldset class="hero-pick" id="mostUsedSizeLabel"><legend>SHOW IN A HERO CARD</legend>
-          <label><input type="radio" name="heroGroup" value="" checked> <span>None</span></label>
+        <fieldset class="hero-pick" id="mostUsedSizeLabel"><legend>WHERE THIS LINK SHOWS UP</legend>
+          <label><input type="radio" name="heroGroup" value="" checked> <span>No hero card</span></label>
           <label><input type="radio" name="heroGroup" value="court"> <span data-hero-label="court">Court Links</span></label>
           <label><input type="radio" name="heroGroup" value="woodlands"> <span data-hero-label="woodlands">Woodlands Law</span></label>
+          <label class="hero-block"><input type="checkbox" name="noMostUsed"> <span>Never show in <b data-hero-label="most-used">Most Used</b>, however often it is opened</span></label>
         </fieldset>
         <div class="form-actions"><button type="button" id="cancel">Cancel</button><button class="save" id="saveLink">Add link</button></div>
       </form>
@@ -101,10 +102,10 @@
   </div>
 
   <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js" defer></script>
-  <script src="auth.js?v=20261111.11" defer></script>
-  <script src="settings.js?v=20261111.11" defer></script>
-  <script src="catalog.js?v=20261111.11" defer></script>
-  <script src="app.js?v=20261111.11" defer></script>
-  <script src="modules.js?v=20261111.11" defer></script>
+  <script src="auth.js?v=20261112.1" defer></script>
+  <script src="settings.js?v=20261112.1" defer></script>
+  <script src="catalog.js?v=20261112.1" defer></script>
+  <script src="app.js?v=20261112.1" defer></script>
+  <script src="modules.js?v=20261112.1" defer></script>
 </body>
 </html>
