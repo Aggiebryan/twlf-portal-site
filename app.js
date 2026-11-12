@@ -292,6 +292,20 @@ function renderHeroSettings() {
   }).join('');
 }
 
+/* “Clio”, “WestLaw” and 2 more — for telling you which links need attention
+ * without printing a wall of names. */
+const nameList = (items, cap = 3) => {
+  const names = items.map(item => `“${item.name}”`);
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  if (names.length <= cap) return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  return `${names.slice(0, cap).join(', ')} and ${names.length - cap} more`;
+};
+
+/* This copies the descriptions shipped in links.json onto the matching rows in
+ * SharePoint. It is a backfill for the links the site was built with, and it
+ * can only ever cover those: a link added through the portal has an id that is
+ * in no file, so there is no text to copy and it has to be typed. */
 document.addEventListener('click', async event => {
   if (!event.target.closest('#publishDescriptions')) return;
   const button = document.querySelector('#publishDescriptions');
@@ -299,14 +313,25 @@ document.addEventListener('click', async event => {
     (window.twlfCatalog.bundled().links || [])
       .filter(link => (link.description || '').trim())
       .map(link => [link.id, link.description]));
-  const pending = links.filter(l => l.itemId && !String(l.description || '').trim() && byLinkId[l.id]).length;
-  if (!pending) { notice('Every firm link already has a description.'); return; }
-  if (!window.confirm(`Write descriptions for ${pending} links that have none? Existing descriptions are left alone.`)) return;
+  const blank = links.filter(l => l.itemId && !String(l.description || '').trim());
+  const copyable = blank.filter(l => byLinkId[l.id]);
+  const mustType = blank.filter(l => !byLinkId[l.id]);
+  const typeHint = also => (mustType.length
+    ? ` ${nameList(mustType)} ${mustType.length === 1 ? 'has' : 'have'} no description${also ? ' either' : ''}, and there is no firm text on file for ${mustType.length === 1 ? 'it' : 'them'} — open the ✎ editor and write one.`
+    : '');
+
+  if (!copyable.length) {
+    notice(mustType.length
+      ? `Nothing to copy.${typeHint(false)}`
+      : 'Every firm link already has a description.', Boolean(mustType.length));
+    return;
+  }
+  if (!window.confirm(`Write descriptions for ${copyable.length} links that have none? Existing descriptions are left alone.`)) return;
   button.disabled = true;
   try {
     const n = await window.twlfCatalog.publishDescriptions(byLinkId,
       (done, total) => { button.textContent = `Writing ${done}/${total}…`; });
-    notice(`Added descriptions to ${n} firm links.`);
+    notice(`Added descriptions to ${n} firm ${n === 1 ? 'link' : 'links'}.${typeHint(true)}`);
   } catch (error) { notice(`Could not write descriptions: ${error.message}`, true); }
   button.disabled = false; button.textContent = 'Add missing link descriptions';
   render();
